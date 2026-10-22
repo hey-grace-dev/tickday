@@ -35,7 +35,12 @@ All EAS workflows need the `EXPO_TOKEN` repo secret.
   device and a custom bottom bar on web (`src/components/app-tabs.web.tsx`).
 - `src/app/habit/[id].tsx`: create (`/habit/new`) / edit modal. `src/app/pro.tsx`: one-time purchase
   screen (purchase not wired up yet).
-- `src/store/habits.ts`: zustand store persisted to AsyncStorage (localStorage on web). Pure date and
-  streak logic lives in `src/lib/`.
+- `src/store/habits.ts`: zustand store persisted to AsyncStorage (localStorage on web). Pure date,
+  streak and growth-level logic lives in `src/lib/`. Bump the store `version` and add a `migrate`
+  step whenever the persisted shape changes.
+- Product concept (keep it distinct from goal apps like 「오늘의목표」): users keep **routines**
+  (code still calls them `Habit`), grouped by time of day (아침/오후/저녁/언제든), checked with one
+  tap. Each routine has a hand-drawn character (`src/components/doodle.tsx`, no emoji anywhere) that
+  grows with total checks (Lv.1-4: sparkles, flower, crown).
 - Web pages are statically rendered at build time, so anything that depends on "now" or stored data
   must wait for `useHydrated()` to avoid hydration mismatches.

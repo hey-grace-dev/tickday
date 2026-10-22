@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { FREE_HABIT_LIMIT } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
-const BENEFITS = ['습관 개수 무제한', '한 번 결제로 계속 사용', '앞으로 추가될 Pro 기능 포함'];
+const BENEFITS = ['루틴 개수 무제한', '한 번 결제로 계속 사용', '앞으로 추가될 Pro 기능 포함'];
 
 // TODO: connect the one-time in-app purchase (RevenueCat) before release
 export default function ProScreen() {
@@ -33,7 +33,7 @@ export default function ProScreen() {
             <ThemedText themeColor="textSecondary" style={styles.center}>
               {isPro
                 ? '응원해 주셔서 고마워요'
-                : `무료 버전은 습관을 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
+                : `무료 버전은 루틴을 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
             </ThemedText>
           </View>
         </View>

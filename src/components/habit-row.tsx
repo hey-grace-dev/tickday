@@ -20,6 +20,7 @@ type HabitRowProps = {
   color: HabitColor;
   checked: boolean;
   streak: number;
+  level: number;
   onToggle: () => void;
   onLongPress: () => void;
 };
@@ -31,6 +32,7 @@ export function HabitRow({
   color,
   checked,
   streak,
+  level,
   onToggle,
   onLongPress,
 }: HabitRowProps) {
@@ -64,16 +66,21 @@ export function HabitRow({
         { backgroundColor: checked ? tint(point) : theme.backgroundElement },
         pressed && styles.pressed,
       ]}>
-      <Doodle character={character} color={point} mood={checked ? 'happy' : 'idle'} size={48} />
+      <Doodle
+        character={character}
+        color={point}
+        mood={checked ? 'happy' : 'idle'}
+        level={level}
+        size={52}
+      />
       <View style={styles.texts}>
         <ThemedText type="semibold" numberOfLines={2}>
           {name}
         </ThemedText>
-        {streak > 0 && (
-          <ThemedText type="caption" themeColor="textSecondary">
-            {streak}일 연속
-          </ThemedText>
-        )}
+        <ThemedText type="caption" themeColor="textSecondary">
+          Lv.{level}
+          {streak > 0 ? ` · ${streak}일 연속` : ''}
+        </ThemedText>
       </View>
       <Animated.View style={bounce}>
         <CheckBubble checked={checked} color={point} />

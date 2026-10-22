@@ -53,7 +53,7 @@ export const useHabits = create<HabitState>()(
     }),
     {
       name: 'tickday',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => AsyncStorage),
       migrate: (persisted, version) => {
         const state = persisted as Pick<HabitState, 'habits' | 'checks' | 'isPro'>;
@@ -75,6 +75,10 @@ export const useHabits = create<HabitState>()(
               color: colorMap[h.color] ?? 'coral',
             };
           });
+        }
+        if (version < 4) {
+          // v4 added the time-of-day slot
+          state.habits = state.habits.map((h) => ({ ...h, time: h.time ?? 'anytime' }));
         }
         return state;
       },

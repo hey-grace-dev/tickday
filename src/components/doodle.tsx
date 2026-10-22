@@ -93,9 +93,11 @@ type DoodleProps = {
   size?: number;
   /** Little arms waving, for the mascot */
   arms?: boolean;
+  /** Growth level (1-4); higher levels add sparkles, a flower, then a crown */
+  level?: number;
 };
 
-export function Doodle({ character, color, mood = 'idle', size = 48, arms }: DoodleProps) {
+export function Doodle({ character, color, mood = 'idle', size = 48, arms, level = 1 }: DoodleProps) {
   const shape = SHAPES[character];
   const y = shape.faceY;
   const stroke = { stroke: INK, strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
@@ -130,6 +132,9 @@ export function Doodle({ character, color, mood = 'idle', size = 48, arms }: Doo
         <Path key={d} d={d} fill="none" {...stroke} />
       ))}
       <Face y={y} mood={mood} />
+      {level >= 2 && <Sparkles />}
+      {level === 3 && <Flower />}
+      {level >= 4 && <Crown />}
     </Svg>
   );
 }
@@ -170,5 +175,52 @@ function Face({ y, mood }: { y: number; mood: Mood }) {
         </>
       )}
     </G>
+  );
+}
+
+const YELLOW = '#FFD25E';
+const PINK = '#FF9CC6';
+
+/** Four-point twinkle */
+function star(cx: number, cy: number, r: number) {
+  return `M${cx} ${cy - r} Q${cx} ${cy} ${cx + r} ${cy} Q${cx} ${cy} ${cx} ${cy + r} Q${cx} ${cy} ${cx - r} ${cy} Q${cx} ${cy} ${cx} ${cy - r} Z`;
+}
+
+function Sparkles() {
+  const props = { fill: YELLOW, stroke: INK, strokeWidth: 1.4, strokeLinejoin: 'round' } as const;
+  return (
+    <G>
+      <Path d={star(56, 22, 5)} {...props} />
+      <Path d={star(7.5, 30, 3.8)} {...props} />
+    </G>
+  );
+}
+
+function Flower() {
+  const cx = 14;
+  const cy = 13;
+  const petals = [0, 72, 144, 216, 288].map((deg) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: cx + Math.cos(rad) * 4, y: cy + Math.sin(rad) * 4 };
+  });
+  return (
+    <G stroke={INK} strokeWidth={1.4}>
+      {petals.map((p) => (
+        <Circle key={`${p.x}-${p.y}`} cx={p.x} cy={p.y} r={3.4} fill={PINK} />
+      ))}
+      <Circle cx={cx} cy={cy} r={2.6} fill={YELLOW} />
+    </G>
+  );
+}
+
+function Crown() {
+  return (
+    <Path
+      d="M39.5 13.5 L40.5 4.5 L45.5 9 L49.5 2.5 L52 9.5 L57 6 L55 15 C50 13 44.5 12.5 39.5 13.5 Z"
+      fill={YELLOW}
+      stroke={INK}
+      strokeWidth={1.8}
+      strokeLinejoin="round"
+    />
   );
 }

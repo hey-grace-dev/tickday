@@ -7,13 +7,32 @@ export type Habit = {
   name: string;
   character: Character;
   color: HabitColor;
+  /** Part of the day the routine belongs to */
+  time: TimeSlot;
   /** Weekdays the habit is scheduled on, 0 = Sunday */
   days: number[];
   /** Day the habit was created; earlier days don't count against it */
   startDate: DateKey;
 };
 
-export type HabitInput = Pick<Habit, 'name' | 'character' | 'color' | 'days'>;
+export type HabitInput = Pick<Habit, 'name' | 'character' | 'color' | 'time' | 'days'>;
+
+export const TIME_SLOTS = [
+  { key: 'morning', label: '아침' },
+  { key: 'afternoon', label: '오후' },
+  { key: 'evening', label: '저녁' },
+  { key: 'anytime', label: '언제든' },
+] as const;
+
+export type TimeSlot = (typeof TIME_SLOTS)[number]['key'];
+
+/** The part of the day it is now; 'anytime' is never current */
+export function currentTimeSlot(date = new Date()): TimeSlot {
+  const hour = date.getHours();
+  if (hour >= 4 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'evening';
+}
 
 /** habit id -> dates it was checked */
 export type Checks = Record<string, DateKey[]>;

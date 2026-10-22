@@ -11,19 +11,21 @@ import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
-import { describeDays, FREE_HABIT_LIMIT } from '@/lib/habits';
+import { levelFor, totalChecks } from '@/lib/growth';
+import { describeDays, FREE_HABIT_LIMIT, TIME_SLOTS } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
 export default function SettingsScreen() {
   const theme = useTheme();
   const habits = useHabits((s) => s.habits);
+  const checks = useHabits((s) => s.checks);
   const isPro = useHabits((s) => s.isPro);
   const resetAll = useHabits((s) => s.resetAll);
 
   const reset = async () => {
     const ok = await confirmDestructive(
       '모든 데이터 삭제',
-      '습관과 체크 기록이 모두 삭제되고 되돌릴 수 없어요.',
+      '루틴과 체크 기록이 모두 삭제되고 되돌릴 수 없어요.',
       '삭제'
     );
     if (ok) resetAll();
@@ -43,22 +45,29 @@ export default function SettingsScreen() {
         <View style={styles.flex}>
           <ThemedText type="semibold">{isPro ? '틱데이 Pro 사용 중' : '틱데이 Pro'}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {isPro ? '응원해 주셔서 고마워요' : `무료는 습관 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
+            {isPro ? '응원해 주셔서 고마워요' : `무료는 루틴 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
           </ThemedText>
         </View>
         <Chevron />
       </Pressable>
 
-      <Section title={`내 습관 ${habits.length}개`}>
+      <Section title={`내 루틴 ${habits.length}개`}>
         {habits.length === 0 ? (
-          <Row label="아직 습관이 없어요" muted />
+          <Row label="아직 루틴이 없어요" muted />
         ) : (
           habits.map((h) => (
             <Row
               key={h.id}
               label={h.name}
-              detail={describeDays(h.days)}
-              leading={<Doodle character={h.character} color={HabitColors[h.color]} size={36} />}
+              detail={`${TIME_SLOTS.find((t) => t.key === h.time)?.label} · ${describeDays(h.days)}`}
+              leading={
+                <Doodle
+                  character={h.character}
+                  color={HabitColors[h.color]}
+                  level={levelFor(totalChecks(checks, h.id))}
+                  size={40}
+                />
+              }
               onPress={() => router.push(`/habit/${h.id}`)}
             />
           ))

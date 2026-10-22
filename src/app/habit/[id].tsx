@@ -16,7 +16,8 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { WEEKDAY_LABELS } from '@/lib/date';
-import { DAY_PRESETS } from '@/lib/habits';
+import { checksToNextLevel, LEVEL_NAMES, levelFor, MAX_LEVEL, totalChecks } from '@/lib/growth';
+import { DAY_PRESETS, TIME_SLOTS, type TimeSlot } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -31,6 +32,7 @@ export default function HabitEditScreen() {
   const addHabit = useHabits((s) => s.addHabit);
   const updateHabit = useHabits((s) => s.updateHabit);
   const deleteHabit = useHabits((s) => s.deleteHabit);
+  const checkCount = useHabits((s) => totalChecks(s.checks, id));
 
   const isNew = id === 'new';
   const [name, setName] = useState(habit?.name ?? '');
@@ -41,7 +43,10 @@ export default function HabitEditScreen() {
   const [color, setColor] = useState<HabitColor>(
     habit?.color ?? COLOR_KEYS[habitCount % COLOR_KEYS.length]
   );
+  const [time, setTime] = useState<TimeSlot>(habit?.time ?? 'anytime');
   const [days, setDays] = useState<number[]>(habit?.days ?? ALL_DAYS);
+  const level = isNew ? 1 : levelFor(checkCount);
+  const toNext = checksToNextLevel(checkCount);
 
   const trimmed = name.trim();
   const canSave = trimmed.length > 0 && days.length > 0;
@@ -54,7 +59,7 @@ export default function HabitEditScreen() {
 
   const save = () => {
     if (!canSave) return;
-    const input = { name: trimmed, character, color, days };
+    const input = { name: trimmed, character, color, time, days };
     if (isNew) addHabit(input);
     else if (habit) updateHabit(habit.id, input);
     close();
@@ -63,7 +68,7 @@ export default function HabitEditScreen() {
   const remove = async () => {
     if (!habit) return;
     const ok = await confirmDestructive(
-      '습관 삭제',
+      '루틴 삭제',
       `'${habit.name}'와 지금까지의 기록이 모두 삭제돼요.`,
       '삭제'
     );
@@ -76,10 +81,10 @@ export default function HabitEditScreen() {
   if (!isNew && !habit) {
     return (
       <ThemedView style={styles.container}>
-        <Stack.Screen options={{ title: '습관 편집' }} />
+        <Stack.Screen options={{ title: '루틴 편집' }} />
         <View style={styles.missing}>
           <Doodle character="ghost" color={HabitColors.purple} mood="sleepy" size={88} />
-          <ThemedText themeColor="textSecondary">습관을 찾을 수 없어요</ThemedText>
+          <ThemedText themeColor="textSecondary">루틴을 찾을 수 없어요</ThemedText>
         </View>
       </ThemedView>
     );
@@ -89,7 +94,7 @@ export default function HabitEditScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: isNew ? '새 습관' : '습관 편집',
+          title: isNew ? '새 루틴' : '루틴 편집',
           headerRight: () => (
             <Pressable onPress={save} disabled={!canSave} hitSlop={10} style={styles.headerButton}>
               <ThemedText
@@ -103,11 +108,19 @@ export default function HabitEditScreen() {
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.preview, { backgroundColor: tint(point) }]}>
-          <Doodle character={character} color={point} mood="happy" size={72} />
+          <Doodle character={character} color={point} mood="happy" level={level} size={80} />
+          {!isNew && (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+              Lv.{level} {LEVEL_NAMES[level - 1]} 단계 ·{' '}
+              {level === MAX_LEVEL || toNext === null
+                ? '다 자랐어요'
+                : `${toNext}번 더 체크하면 자라요`}
+            </ThemedText>
+          )}
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="습관 이름을 적어 주세요"
+            placeholder="루틴 이름을 적어 주세요"
             placeholderTextColor={theme.textSecondary}
             autoFocus={isNew}
             maxLength={40}
@@ -162,6 +175,19 @@ export default function HabitEditScreen() {
           </View>
         </Field>
 
+        <Field label="언제 할까요?">
+          <View style={styles.presets}>
+            {TIME_SLOTS.map((slot) => (
+              <Chip
+                key={slot.key}
+                label={slot.label}
+                selected={time === slot.key}
+                onPress={() => setTime(slot.key)}
+              />
+            ))}
+          </View>
+        </Field>
+
         <Field label="반복 요일">
           <View style={styles.days}>
             {WEEKDAY_LABELS.map((label, day) => (
@@ -213,7 +239,7 @@ export default function HabitEditScreen() {
           {!isNew && (
             <Pressable accessibilityRole="button" onPress={remove} style={styles.deleteButton}>
               <ThemedText type="smallBold" style={{ color: theme.danger }}>
-                습관 삭제
+                루틴 삭제
               </ThemedText>
             </Pressable>
           )}
@@ -359,6 +385,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  center: {
+    textAlign: 'center',
   },
   missing: {
     alignItems: 'center',

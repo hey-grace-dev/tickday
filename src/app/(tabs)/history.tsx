@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type DateKey, fromKey, monthGrid, todayKey, WEEKDAY_LABELS } from '@/lib/date';
+import { levelFor, totalChecks } from '@/lib/growth';
 import { type Checks, currentStreak, type Habit, isChecked, isScheduled } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
@@ -57,7 +58,7 @@ export default function HistoryScreen() {
         <View style={styles.empty}>
           <Doodle character="bear" color={HabitColors.yellow} mood="sleepy" size={96} />
           <ThemedText themeColor="textSecondary" style={styles.center}>
-            습관을 추가하면 여기에 기록이 쌓여요
+            루틴을 추가하면 여기에 기록이 쌓여요
           </ThemedText>
         </View>
       </Screen>
@@ -136,7 +137,12 @@ export default function HistoryScreen() {
       <View style={styles.stats}>
         {stats.map(({ habit, rate, streak }) => (
           <ThemedView key={habit.id} type="backgroundElement" style={styles.statRow}>
-            <Doodle character={habit.character} color={HabitColors[habit.color]} size={40} />
+            <Doodle
+              character={habit.character}
+              color={HabitColors[habit.color]}
+              level={levelFor(totalChecks(checks, habit.id))}
+              size={44}
+            />
             <ThemedText type="semibold" style={styles.flex} numberOfLines={1}>
               {habit.name}
             </ThemedText>
