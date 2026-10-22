@@ -2,12 +2,16 @@ import { ScrollView, StyleSheet, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { FREE_HABIT_LIMIT } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
-const BENEFITS = ['습관 개수 무제한', '한 번 결제로 평생 사용', '앞으로 추가될 Pro 기능 포함'];
+const BENEFITS = [
+  '🌈 습관 개수 무제한',
+  '💝 한 번 결제로 평생 사용',
+  '🎁 앞으로 추가될 Pro 기능 포함',
+];
 
 // TODO: connect the one-time in-app purchase (RevenueCat) before release
 export default function ProScreen() {
@@ -18,6 +22,7 @@ export default function ProScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
+        <ThemedText style={styles.crown}>👑</ThemedText>
         <ThemedText type="subtitle">{isPro ? 'Pro 사용 중' : '틱데이 Pro'}</ThemedText>
         <ThemedText themeColor="textSecondary">
           {isPro
@@ -27,16 +32,15 @@ export default function ProScreen() {
 
         <ThemedView type="backgroundElement" style={styles.card}>
           {BENEFITS.map((benefit) => (
-            <View key={benefit} style={styles.benefit}>
-              <ThemedText style={{ color: theme.accent }}>✓</ThemedText>
-              <ThemedText>{benefit}</ThemedText>
-            </View>
+            <ThemedText key={benefit} type="display">
+              {benefit}
+            </ThemedText>
           ))}
         </ThemedView>
 
         {!isPro && (
           <View style={[styles.button, { backgroundColor: theme.backgroundSelected }]}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
+            <ThemedText type="display" themeColor="textSecondary">
               결제는 출시 때 열려요
             </ThemedText>
           </View>
@@ -65,19 +69,19 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.three,
   },
-  card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    gap: Spacing.two,
+  crown: {
+    fontSize: 56,
+    lineHeight: 68,
   },
-  benefit: {
-    flexDirection: 'row',
-    gap: Spacing.two,
+  card: {
+    borderRadius: Radius.card,
+    padding: Spacing.four,
+    gap: Spacing.three,
   },
   button: {
     alignItems: 'center',
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.pill,
   },
   devToggle: {
     alignItems: 'center',

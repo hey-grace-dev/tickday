@@ -1,10 +1,19 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
+import { DisplayFont, Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | 'default'
+    | 'title'
+    | 'small'
+    | 'smallBold'
+    | 'subtitle'
+    | 'display'
+    | 'link'
+    | 'linkPrimary'
+    | 'code';
   themeColor?: ThemeColor;
 };
 
@@ -31,14 +40,20 @@ const styles = StyleSheet.create({
     fontWeight: 500,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontFamily: DisplayFont,
+    fontSize: 40,
+    lineHeight: 48,
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontFamily: DisplayFont,
+    fontSize: 30,
+    lineHeight: 40,
+  },
+  /** Rounded font at body size, for buttons, chips and emphasis */
+  display: {
+    fontFamily: DisplayFont,
+    fontSize: 17,
+    lineHeight: 24,
   },
   link: {
     lineHeight: 30,

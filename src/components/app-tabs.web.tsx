@@ -9,7 +9,7 @@ import {
 import { type AndroidSymbol, SymbolView } from 'expo-symbols';
 import { Pressable, View, StyleSheet } from 'react-native';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { DisplayFont, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ThemedText } from './themed-text';
@@ -45,11 +45,11 @@ export function TabButton({
   ...props
 }: TabTriggerSlotProps & { icon: AndroidSymbol }) {
   const theme = useTheme();
-  const color = isFocused ? theme.text : theme.textSecondary;
+  const color = isFocused ? theme.accent : theme.textSecondary;
   return (
     <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <SymbolView name={{ web: icon }} tintColor={color} size={24} />
-      <ThemedText type="small" style={{ color }}>
+      <ThemedText style={[styles.label, { color }]}>
         {children}
       </ThemedText>
     </Pressable>
@@ -68,6 +68,14 @@ const styles = StyleSheet.create({
   tabListContainer: {
     alignItems: 'center',
     paddingBottom: Spacing.two,
+    borderTopLeftRadius: Radius.card,
+    borderTopRightRadius: Radius.card,
+    boxShadow: '0 -2px 12px rgba(74, 59, 53, 0.08)',
+  },
+  label: {
+    fontFamily: DisplayFont,
+    fontSize: 13,
+    lineHeight: 18,
   },
   innerContainer: {
     flexDirection: 'row',

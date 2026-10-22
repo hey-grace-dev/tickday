@@ -9,25 +9,47 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-    accent: '#16A34A',
+    text: '#4A3B35',
+    background: '#FFF8F1',
+    backgroundElement: '#FFFFFF',
+    backgroundSelected: '#F4E9DE',
+    textSecondary: '#A08F86',
+    accent: '#FF8A80',
     onAccent: '#ffffff',
-    danger: '#DC2626',
+    danger: '#E5484D',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-    accent: '#22C55E',
-    onAccent: '#04210F',
-    danger: '#F87171',
+    text: '#FBEFE9',
+    background: '#1F1A1D',
+    backgroundElement: '#2C2529',
+    backgroundSelected: '#3B3237',
+    textSecondary: '#B8A7A1',
+    accent: '#FF9E95',
+    onAccent: '#3A1714',
+    danger: '#FF8A8A',
   },
+} as const;
+
+/** Pastel colors a habit can be tagged with; text on them is always dark */
+export const HabitColors = {
+  peach: '#FFD3C4',
+  lemon: '#FFEDA8',
+  mint: '#C5EED7',
+  sky: '#C9E4FF',
+  lavender: '#E0D4FF',
+  pink: '#FFD0E4',
+} as const;
+
+export type HabitColor = keyof typeof HabitColors;
+
+export const OnHabitColor = '#4A3B35';
+
+/** Rounded Korean display font, loaded in the root layout */
+export const DisplayFont = 'Jua';
+
+export const Radius = {
+  card: 24,
+  pill: 999,
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;

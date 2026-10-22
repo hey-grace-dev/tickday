@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { HabitColors, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { describeDays, FREE_HABIT_LIMIT } from '@/lib/habits';
@@ -31,7 +31,7 @@ export default function SettingsScreen() {
     <Screen title="설정">
       <Section title="틱데이 Pro">
         <Row
-          label={isPro ? 'Pro 사용 중' : 'Pro 잠금 해제'}
+          label={isPro ? '👑 Pro 사용 중' : '👑 Pro 잠금 해제'}
           detail={isPro ? '감사합니다!' : `무료는 습관 ${FREE_HABIT_LIMIT}개까지`}
           onPress={() => router.push('/pro')}
         />
@@ -45,6 +45,8 @@ export default function SettingsScreen() {
             <Row
               key={h.id}
               label={h.name}
+              emoji={h.emoji}
+              emojiBg={HabitColors[h.color]}
               detail={describeDays(h.days)}
               onPress={() => router.push(`/habit/${h.id}`)}
             />
@@ -53,12 +55,12 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="데이터">
+        <Row label="🔒 데이터는 이 기기에만 저장돼요" />
         <Row label="모든 데이터 삭제" color={theme.danger} onPress={reset} />
-        <Row label="데이터는 이 기기에만 저장돼요" />
       </Section>
 
       <ThemedText type="small" themeColor="textSecondary" style={styles.version}>
-        틱데이 {Constants.expoConfig?.version}
+        틱데이 {Constants.expoConfig?.version} · 오늘도 톡 ✓
       </ThemedText>
     </Screen>
   );
@@ -67,7 +69,7 @@ export default function SettingsScreen() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+      <ThemedText type="display" themeColor="textSecondary" style={styles.sectionTitle}>
         {title}
       </ThemedText>
       <ThemedView type="backgroundElement" style={styles.card}>
@@ -77,11 +79,23 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-type RowProps = { label: string; detail?: string; color?: string; onPress?: () => void };
+type RowProps = {
+  label: string;
+  detail?: string;
+  color?: string;
+  emoji?: string;
+  emojiBg?: string;
+  onPress?: () => void;
+};
 
-function Row({ label, detail, color, onPress }: RowProps) {
+function Row({ label, detail, color, emoji, emojiBg, onPress }: RowProps) {
   const content = (
     <>
+      {emoji && (
+        <View style={[styles.rowEmoji, { backgroundColor: emojiBg }]}>
+          <ThemedText style={styles.rowEmojiText}>{emoji}</ThemedText>
+        </View>
+      )}
       <ThemedText style={[styles.rowLabel, color ? { color } : undefined]} numberOfLines={1}>
         {label}
       </ThemedText>
@@ -111,7 +125,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
     overflow: 'hidden',
   },
   row: {
@@ -125,6 +139,17 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
+  },
+  rowEmoji: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowEmojiText: {
+    fontSize: 16,
+    lineHeight: 20,
   },
   pressed: {
     opacity: 0.6,

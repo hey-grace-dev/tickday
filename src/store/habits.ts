@@ -4,15 +4,15 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { type DateKey, todayKey } from '@/lib/date';
-import { type Checks, FREE_HABIT_LIMIT, type Habit } from '@/lib/habits';
+import { type Checks, FREE_HABIT_LIMIT, type Habit, type HabitInput } from '@/lib/habits';
 
 type HabitState = {
   habits: Habit[];
   checks: Checks;
   /** Unlocked with the one-time purchase */
   isPro: boolean;
-  addHabit: (input: Pick<Habit, 'name' | 'days'>) => void;
-  updateHabit: (id: string, input: Pick<Habit, 'name' | 'days'>) => void;
+  addHabit: (input: HabitInput) => void;
+  updateHabit: (id: string, input: HabitInput) => void;
   deleteHabit: (id: string) => void;
   toggleCheck: (id: string, date: DateKey) => void;
   setPro: (isPro: boolean) => void;
@@ -27,13 +27,13 @@ export const useHabits = create<HabitState>()(
       habits: [],
       checks: {},
       isPro: false,
-      addHabit: ({ name, days }) =>
+      addHabit: (input) =>
         set((s) => ({
-          habits: [...s.habits, { id: newId(), name, days, startDate: todayKey() }],
+          habits: [...s.habits, { id: newId(), ...input, startDate: todayKey() }],
         })),
-      updateHabit: (id, { name, days }) =>
+      updateHabit: (id, input) =>
         set((s) => ({
-          habits: s.habits.map((h) => (h.id === id ? { ...h, name, days } : h)),
+          habits: s.habits.map((h) => (h.id === id ? { ...h, ...input } : h)),
         })),
       deleteHabit: (id) =>
         set((s) => {
@@ -51,8 +51,16 @@ export const useHabits = create<HabitState>()(
     }),
     {
       name: 'tickday',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
+      migrate: (persisted, version) => {
+        const state = persisted as Pick<HabitState, 'habits' | 'checks' | 'isPro'>;
+        if (version < 2) {
+          // v2 added emoji and color
+          state.habits = state.habits.map((h) => ({ ...h, emoji: '🌱', color: 'mint' }));
+        }
+        return state;
+      },
       partialize: ({ habits, checks, isPro }) => ({ habits, checks, isPro }),
     }
   )

@@ -5,7 +5,7 @@ import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { HabitColors, OnHabitColor, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type DateKey, fromKey, monthGrid, todayKey, WEEKDAY_LABELS } from '@/lib/date';
 import { type Checks, currentStreak, type Habit, isChecked, isScheduled } from '@/lib/habits';
@@ -21,9 +21,7 @@ function dayRatio(habits: Habit[], checks: Checks, date: DateKey): number | null
 function dayColor(ratio: number, theme: ReturnType<typeof useTheme>) {
   if (ratio === 0) return theme.backgroundSelected;
   if (ratio === 1) return theme.accent;
-  // Partially done days get a lighter accent; hex alpha suffix keeps the label fully opaque
-  const alpha = Math.round((0.25 + ratio * 0.45) * 255);
-  return `${theme.accent}${alpha.toString(16).padStart(2, '0')}`;
+  return HabitColors.peach;
 }
 
 export default function HistoryScreen() {
@@ -61,9 +59,12 @@ export default function HistoryScreen() {
   return (
     <Screen title="기록">
       {habits.length === 0 ? (
-        <ThemedText themeColor="textSecondary" style={styles.center}>
-          습관을 추가하면 여기에 기록이 쌓여요
-        </ThemedText>
+        <View style={styles.emptyBox}>
+          <ThemedText style={styles.emptyEmoji}>📅</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.center}>
+            습관을 추가하면 여기에 기록이 쌓여요
+          </ThemedText>
+        </View>
       ) : (
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -72,7 +73,7 @@ export default function HistoryScreen() {
               {habits.map((h) => (
                 <FilterChip
                   key={h.id}
-                  label={h.name}
+                  label={`${h.emoji} ${h.name}`}
                   selected={filterId === h.id}
                   onPress={() => setFilterId(h.id)}
                 />
@@ -88,7 +89,7 @@ export default function HistoryScreen() {
                 label="이전 달"
                 onPress={() => shiftMonth(-1)}
               />
-              <ThemedText type="smallBold">
+              <ThemedText type="display">
                 {month.year}년 {month.month + 1}월
               </ThemedText>
               {isCurrentMonth ? (
@@ -127,7 +128,13 @@ export default function HistoryScreen() {
                       <ThemedText
                         type="small"
                         style={{
-                          color: full ? theme.onAccent : future ? theme.textSecondary : theme.text,
+                          color: full
+                            ? theme.onAccent
+                            : ratio
+                              ? OnHabitColor
+                              : future
+                                ? theme.textSecondary
+                                : theme.text,
                         }}>
                         {fromKey(date).getDate()}
                       </ThemedText>
@@ -143,7 +150,10 @@ export default function HistoryScreen() {
               .filter((s) => !filterId || s.habit.id === filterId)
               .map(({ habit, rate, streak }) => (
                 <ThemedView key={habit.id} type="backgroundElement" style={styles.statRow}>
-                  <ThemedText style={styles.statName} numberOfLines={1}>
+                  <View style={[styles.statEmoji, { backgroundColor: HabitColors[habit.color] }]}>
+                    <ThemedText style={styles.statEmojiText}>{habit.emoji}</ThemedText>
+                  </View>
+                  <ThemedText type="display" style={styles.statName} numberOfLines={1}>
                     {habit.name}
                   </ThemedText>
                   <View style={styles.statValues}>
@@ -153,7 +163,7 @@ export default function HistoryScreen() {
                     <ThemedText
                       type="smallBold"
                       style={{ color: streak > 0 ? theme.accent : theme.textSecondary }}>
-                      {streak}일 연속
+                      🔥 {streak}일
                     </ThemedText>
                   </View>
                 </ThemedView>
@@ -180,11 +190,11 @@ function FilterChip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: selected ? theme.text : theme.backgroundElement }]}>
+      style={[styles.chip, { backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
       <ThemedText
-        type="smallBold"
+        type="display"
         numberOfLines={1}
-        style={{ color: selected ? theme.background : theme.text }}>
+        style={{ color: selected ? theme.onAccent : theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -194,7 +204,15 @@ function FilterChip({
 const styles = StyleSheet.create({
   center: {
     textAlign: 'center',
+  },
+  emptyBox: {
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingVertical: Spacing.six,
+  },
+  emptyEmoji: {
+    fontSize: 56,
+    lineHeight: 68,
   },
   filters: {
     flexDirection: 'row',
@@ -203,11 +221,11 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-    maxWidth: 160,
+    borderRadius: Radius.pill,
+    maxWidth: 180,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
     padding: Spacing.three,
     gap: Spacing.two,
   },
@@ -245,7 +263,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+  },
+  statEmoji: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statEmojiText: {
+    fontSize: 20,
+    lineHeight: 26,
   },
   statName: {
     flex: 1,
