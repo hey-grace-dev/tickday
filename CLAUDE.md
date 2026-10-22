@@ -43,5 +43,9 @@ All EAS workflows need the `EXPO_TOKEN` repo secret.
   tap. Each routine has a hand-drawn character (`src/components/doodle.tsx`, no emoji anywhere) that
   grows with total checks (Lv.1-5 at 0/3/10/30/66 checks: body gets bigger, then sparkles, flower,
   crown). Growth is shown in the 친구들 tab (`friends`) and per-character page (`src/app/friend/[id].tsx`).
+- Routines can graduate (`archivedAt`, kept in 친구들 with their EXP) or be deleted (undo toast in
+  the root layout). Past days are edited from the History calendar. Settings links to
+  `src/app/reminders.tsx` (expo-notifications daily reminder per time slot, native only) and
+  `src/app/backup.tsx` (backup as pasted JSON text, validated in `src/lib/backup.ts`).
 - Web pages are statically rendered at build time, so anything that depends on "now" or stored data
   must wait for `useHydrated()` to avoid hydration mismatches.

@@ -13,6 +13,8 @@ export type Habit = {
   days: number[];
   /** Day the habit was created; earlier days don't count against it */
   startDate: DateKey;
+  /** Set when the routine graduated (archived): hidden from today, character kept */
+  archivedAt?: DateKey;
 };
 
 export type HabitInput = Pick<Habit, 'name' | 'character' | 'color' | 'time' | 'days'>;
@@ -46,7 +48,11 @@ export const DAY_PRESETS = [
 ] as const;
 
 export function isScheduled(habit: Habit, date: DateKey): boolean {
-  return date >= habit.startDate && habit.days.includes(weekdayOf(date));
+  return !habit.archivedAt && date >= habit.startDate && habit.days.includes(weekdayOf(date));
+}
+
+export function activeHabits(habits: Habit[]): Habit[] {
+  return habits.filter((h) => !h.archivedAt);
 }
 
 export function isChecked(checks: Checks, habitId: string, date: DateKey): boolean {

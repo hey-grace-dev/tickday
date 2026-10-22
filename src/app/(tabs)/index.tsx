@@ -13,6 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { formatLongDate, todayKey } from '@/lib/date';
 import { growthOf, habitGrowth, LEVEL_NAMES, totalChecks } from '@/lib/growth';
 import {
+  activeHabits,
   currentStreak,
   currentTimeSlot,
   type Habit,
@@ -24,7 +25,7 @@ import { useCanAddHabit, useHabits, useHydrated } from '@/store/habits';
 
 export default function TodayScreen() {
   const hydrated = useHydrated();
-  const habits = useHabits((s) => s.habits);
+  const habits = activeHabits(useHabits((s) => s.habits));
   const checks = useHabits((s) => s.checks);
   const toggleCheck = useHabits((s) => s.toggleCheck);
   const canAdd = useCanAddHabit();

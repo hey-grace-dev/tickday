@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { fromKey, todayKey } from '@/lib/date';
 import { EXP_PER_CHECK, expForLevel, habitGrowth, LEVEL_NAMES, MAX_LEVEL } from '@/lib/growth';
 import { currentStreak } from '@/lib/habits';
-import { useHabits } from '@/store/habits';
+import { useCanAddHabit, useHabits } from '@/store/habits';
 
 const STAGES = Array.from({ length: MAX_LEVEL }, (_, i) => i + 1);
 
@@ -20,6 +20,8 @@ export default function FriendScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const habit = useHabits((s) => s.habits.find((h) => h.id === id));
   const checks = useHabits((s) => s.checks);
+  const restoreHabit = useHabits((s) => s.restoreHabit);
+  const canAdd = useCanAddHabit();
 
   if (!habit) {
     return (
@@ -37,8 +39,9 @@ export default function FriendScreen() {
   const { level } = growth;
   const point = HabitColors[habit.color];
   const today = todayKey();
+  const lastDay = habit.archivedAt ?? today;
   const days =
-    Math.round((fromKey(today).getTime() - fromKey(habit.startDate).getTime()) / 86_400_000) + 1;
+    Math.round((fromKey(lastDay).getTime() - fromKey(habit.startDate).getTime()) / 86_400_000) + 1;
 
   return (
     <ThemedView style={styles.container}>
@@ -59,15 +62,23 @@ export default function FriendScreen() {
       />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.hero, { backgroundColor: tint(point, 0.16) }]}>
-          <Doodle character={habit.character} color={point} mood="happy" level={level} size={200} />
+          <Doodle
+            character={habit.character}
+            color={point}
+            mood={habit.archivedAt ? 'sleepy' : 'happy'}
+            level={level}
+            size={200}
+          />
           <View style={styles.heroTexts}>
             <ThemedText type="title" style={styles.center}>
               Lv.{level} {growth.name}
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.center}>
-              {growth.nextExp === null
-                ? '다 자랐어요. 정말 대단해요!'
-                : `체크할 때마다 +${EXP_PER_CHECK} EXP`}
+              {habit.archivedAt
+                ? '졸업한 친구예요. 쉬는 동안 EXP는 그대로예요'
+                : growth.nextExp === null
+                  ? '다 자랐어요. 정말 대단해요!'
+                  : `체크할 때마다 +${EXP_PER_CHECK} EXP`}
             </ThemedText>
           </View>
           <View style={styles.expBlock}>
@@ -121,6 +132,27 @@ export default function FriendScreen() {
           <Stat label="연속" value={`${currentStreak(habit, checks, today)}일`} />
           <Stat label="함께한 날" value={`${days}일`} />
         </View>
+
+        {habit.archivedAt && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              if (!canAdd) {
+                router.push('/pro');
+                return;
+              }
+              restoreHabit(habit.id);
+            }}
+            style={({ pressed }) => [
+              styles.restoreButton,
+              { backgroundColor: theme.accent },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="semibold" style={{ color: theme.onAccent }}>
+              다시 함께하기
+            </ThemedText>
+          </Pressable>
+        )}
       </ScrollView>
     </ThemedView>
   );
@@ -200,6 +232,15 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingVertical: 14,
     borderRadius: Layout.cardRadius,
+  },
+  restoreButton: {
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  pressed: {
+    opacity: 0.8,
   },
   missing: {
     alignItems: 'center',

@@ -18,7 +18,7 @@ import { confirmDestructive } from '@/lib/confirm';
 import { WEEKDAY_LABELS } from '@/lib/date';
 import { growthOf, totalChecks } from '@/lib/growth';
 import { DAY_PRESETS, TIME_SLOTS, type TimeSlot } from '@/lib/habits';
-import { useHabits } from '@/store/habits';
+import { useCanAddHabit, useHabits } from '@/store/habits';
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const COLOR_KEYS = Object.keys(HabitColors) as HabitColor[];
@@ -32,6 +32,9 @@ export default function HabitEditScreen() {
   const addHabit = useHabits((s) => s.addHabit);
   const updateHabit = useHabits((s) => s.updateHabit);
   const deleteHabit = useHabits((s) => s.deleteHabit);
+  const archiveHabit = useHabits((s) => s.archiveHabit);
+  const restoreHabit = useHabits((s) => s.restoreHabit);
+  const canAdd = useCanAddHabit();
   const checkCount = useHabits((s) => totalChecks(s.checks, id));
 
   const isNew = id === 'new';
@@ -64,17 +67,36 @@ export default function HabitEditScreen() {
     close();
   };
 
+  // After deleting or graduating, the character page behind this modal no longer applies
+  const leaveToToday = () => router.dismissTo('/');
+
   const remove = async () => {
     if (!habit) return;
     const ok = await confirmDestructive(
       '루틴 삭제',
-      `'${habit.name}'와 지금까지의 기록이 모두 삭제돼요.`,
+      `'${habit.name}' 캐릭터와 기록이 모두 사라져요. 캐릭터를 남기고 싶다면 졸업시켜 주세요.`,
       '삭제'
     );
     if (ok) {
       deleteHabit(habit.id);
-      close();
+      leaveToToday();
     }
+  };
+
+  const graduate = () => {
+    if (!habit) return;
+    archiveHabit(habit.id);
+    leaveToToday();
+  };
+
+  const comeBack = () => {
+    if (!habit) return;
+    if (!canAdd) {
+      router.push('/pro');
+      return;
+    }
+    restoreHabit(habit.id);
+    close();
   };
 
   if (!isNew && !habit) {
@@ -243,7 +265,27 @@ export default function HabitEditScreen() {
             </ThemedText>
           </Pressable>
 
-          {!isNew && (
+          {habit && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={habit.archivedAt ? comeBack : graduate}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { backgroundColor: theme.backgroundElement },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="semibold">
+                {habit.archivedAt ? '다시 함께하기' : '졸업시키기'}
+              </ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {habit.archivedAt
+                  ? '오늘 목록으로 돌아와요'
+                  : '오늘 목록에서 빠지고, 캐릭터는 친구들 탭에 남아요'}
+              </ThemedText>
+            </Pressable>
+          )}
+
+          {habit && (
             <Pressable accessibilityRole="button" onPress={remove} style={styles.deleteButton}>
               <ThemedText type="smallBold" style={{ color: theme.danger }}>
                 루틴 삭제
@@ -377,12 +419,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   actions: {
-    gap: 8,
+    gap: Layout.itemGap,
   },
   saveButton: {
     minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 16,
+  },
+  secondaryButton: {
+    minHeight: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingVertical: 10,
     borderRadius: 16,
   },
   deleteButton: {

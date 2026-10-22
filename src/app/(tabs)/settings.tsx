@@ -1,26 +1,35 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { Fragment, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Doodle } from '@/components/doodle';
+import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
+import { Chevron, Row, Section } from '@/components/settings-list';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { habitGrowth } from '@/lib/growth';
-import { describeDays, FREE_HABIT_LIMIT, TIME_SLOTS } from '@/lib/habits';
+import { activeHabits, describeDays, FREE_HABIT_LIMIT, TIME_SLOTS } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
 export default function SettingsScreen() {
   const theme = useTheme();
-  const habits = useHabits((s) => s.habits);
+  const allHabits = useHabits((s) => s.habits);
   const checks = useHabits((s) => s.checks);
   const isPro = useHabits((s) => s.isPro);
+  const reminders = useHabits((s) => s.reminders);
+  const moveHabit = useHabits((s) => s.moveHabit);
   const resetAll = useHabits((s) => s.resetAll);
+  const [reordering, setReordering] = useState(false);
+
+  const habits = activeHabits(allHabits);
+  const graduatedCount = allHabits.length - habits.length;
+  // Same order as the Today screen: by time slot, then by list order
+  const ordered = TIME_SLOTS.flatMap((slot) => habits.filter((h) => h.time === slot.key));
+  const remindersOn = Object.values(reminders).filter((r) => r.enabled).length;
 
   const reset = async () => {
     const ok = await confirmDestructive(
@@ -53,31 +62,85 @@ export default function SettingsScreen() {
         <Chevron />
       </Pressable>
 
-      <Section title={`내 루틴 ${habits.length}개`}>
-        {habits.length === 0 ? (
+      <Section
+        title={`내 루틴 ${habits.length}개`}
+        action={
+          habits.length > 1 && (
+            <Pressable onPress={() => setReordering((r) => !r)} hitSlop={10}>
+              <ThemedText type="smallBold" style={{ color: theme.accent }}>
+                {reordering ? '완료' : '순서 바꾸기'}
+              </ThemedText>
+            </Pressable>
+          )
+        }
+        footer={reordering ? '같은 시간대 안에서 순서를 바꿀 수 있어요' : undefined}>
+        {ordered.length === 0 ? (
           <Row label="아직 루틴이 없어요" muted />
         ) : (
-          habits.map((h) => (
-            <Row
-              key={h.id}
-              label={h.name}
-              detail={`${TIME_SLOTS.find((t) => t.key === h.time)?.label} · ${describeDays(h.days)}`}
-              leading={
-                <Doodle
-                  character={h.character}
-                  color={HabitColors[h.color]}
-                  level={habitGrowth(checks, h.id).level}
-                  size={40}
-                />
-              }
-              onPress={() => router.push(`/habit/${h.id}`)}
-            />
-          ))
+          ordered.map((h) => {
+            const sameSlot = ordered.filter((o) => o.time === h.time);
+            const pos = sameSlot.indexOf(h);
+            return (
+              <Row
+                key={h.id}
+                label={h.name}
+                detail={
+                  reordering
+                    ? undefined
+                    : `${TIME_SLOTS.find((t) => t.key === h.time)?.label} · ${describeDays(h.days)}`
+                }
+                leading={
+                  <Doodle
+                    character={h.character}
+                    color={HabitColors[h.color]}
+                    level={habitGrowth(checks, h.id).level}
+                    size={40}
+                  />
+                }
+                trailing={
+                  reordering ? (
+                    <View style={styles.moveButtons}>
+                      <ThemedText type="caption" themeColor="textSecondary">
+                        {TIME_SLOTS.find((t) => t.key === h.time)?.label}
+                      </ThemedText>
+                      <MoveButton
+                        up
+                        disabled={pos === 0}
+                        onPress={() => moveHabit(h.id, -1)}
+                        label={`${h.name} 위로`}
+                      />
+                      <MoveButton
+                        disabled={pos === sameSlot.length - 1}
+                        onPress={() => moveHabit(h.id, 1)}
+                        label={`${h.name} 아래로`}
+                      />
+                    </View>
+                  ) : undefined
+                }
+                onPress={reordering ? undefined : () => router.push(`/habit/${h.id}`)}
+              />
+            );
+          })
+        )}
+        {graduatedCount > 0 && !reordering && (
+          <Row
+            label={`졸업한 친구 ${graduatedCount}명`}
+            muted
+            onPress={() => router.push('/friends')}
+          />
         )}
       </Section>
 
-      <Section title="데이터">
-        <Row label="기록은 이 기기에만 저장돼요" muted />
+      <Section title="알림">
+        <Row
+          label="시간대별 알림"
+          detail={remindersOn > 0 ? `${remindersOn}개 켜짐` : '꺼짐'}
+          onPress={() => router.push('/reminders')}
+        />
+      </Section>
+
+      <Section title="데이터" footer="기록은 이 기기에만 저장돼요. 폰을 바꾸기 전에 백업해 두세요.">
+        <Row label="백업하기 / 불러오기" onPress={() => router.push('/backup')} />
         <Row label="모든 데이터 삭제" color={theme.danger} onPress={reset} />
       </Section>
 
@@ -88,73 +151,18 @@ export default function SettingsScreen() {
   );
 }
 
-function Chevron() {
-  const theme = useTheme();
-  return (
-    <SymbolView
-      name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-      tintColor={theme.textSecondary}
-      size={18}
-    />
-  );
-}
+type MoveButtonProps = { up?: boolean; disabled: boolean; onPress: () => void; label: string };
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  const theme = useTheme();
-  const rows = Array.isArray(children) ? children : [children];
+function MoveButton({ up, disabled, onPress, label }: MoveButtonProps) {
   return (
-    <View style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-        {title}
-      </ThemedText>
-      <ThemedView type="backgroundElement" style={styles.card}>
-        {rows.map((row, i) => (
-          <Fragment key={i}>
-            {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
-            {row}
-          </Fragment>
-        ))}
-      </ThemedView>
+    <View style={disabled && styles.disabled} pointerEvents={disabled ? 'none' : 'auto'}>
+      <IconButton
+        sf={up ? 'chevron.up' : 'chevron.down'}
+        md={up ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
+        label={label}
+        onPress={onPress}
+      />
     </View>
-  );
-}
-
-type RowProps = {
-  label: string;
-  detail?: string;
-  color?: string;
-  muted?: boolean;
-  leading?: ReactNode;
-  onPress?: () => void;
-};
-
-function Row({ label, detail, color, muted, leading, onPress }: RowProps) {
-  const content = (
-    <>
-      {leading}
-      <ThemedText
-        type={muted ? 'small' : 'default'}
-        themeColor={muted ? 'textSecondary' : undefined}
-        style={[styles.flex, color ? { color } : undefined]}
-        numberOfLines={1}>
-        {label}
-      </ThemedText>
-      {detail && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {detail}
-        </ThemedText>
-      )}
-      {onPress && !color && <Chevron />}
-    </>
-  );
-  if (!onPress) return <View style={styles.row}>{content}</View>;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      {content}
-    </Pressable>
   );
 }
 
@@ -169,27 +177,13 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
     borderRadius: Layout.cardRadius,
   },
-  section: {
-    gap: Layout.titleGap,
-  },
-  sectionTitle: {
-    paddingHorizontal: 4,
-  },
-  card: {
-    borderRadius: Layout.cardRadius,
-    overflow: 'hidden',
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: Layout.cardPadding,
-  },
-  row: {
+  moveButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    minHeight: 56,
-    paddingVertical: 10,
-    paddingHorizontal: Layout.cardPadding,
+    gap: 6,
+  },
+  disabled: {
+    opacity: 0.3,
   },
   pressed: {
     opacity: 0.6,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { CheckBubble } from '@/components/check-bubble';
 import { Doodle } from '@/components/doodle';
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
@@ -8,9 +9,23 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { type DateKey, fromKey, monthGrid, todayKey, WEEKDAY_LABELS } from '@/lib/date';
+import {
+  type DateKey,
+  formatLongDate,
+  fromKey,
+  monthGrid,
+  todayKey,
+  WEEKDAY_LABELS,
+} from '@/lib/date';
 import { habitGrowth } from '@/lib/growth';
-import { type Checks, currentStreak, type Habit, isChecked, isScheduled } from '@/lib/habits';
+import {
+  activeHabits,
+  type Checks,
+  currentStreak,
+  type Habit,
+  isChecked,
+  isScheduled,
+} from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
 /** Share of scheduled habits done on a day, or null when nothing was scheduled */
@@ -22,13 +37,15 @@ function dayRatio(habits: Habit[], checks: Checks, date: DateKey): number | null
 
 export default function HistoryScreen() {
   const theme = useTheme();
-  const habits = useHabits((s) => s.habits);
+  const habits = activeHabits(useHabits((s) => s.habits));
   const checks = useHabits((s) => s.checks);
   const today = todayKey();
   const now = fromKey(today);
 
   const [month, setMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [filterId, setFilterId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<DateKey>(today);
+  const toggleCheck = useHabits((s) => s.toggleCheck);
 
   const shown = filterId ? habits.filter((h) => h.id === filterId) : habits;
   const cells = monthGrid(month.year, month.month);
@@ -122,13 +139,21 @@ export default function HistoryScreen() {
             const full = ratio === 1;
             const partial = ratio !== null && ratio > 0 && ratio < 1;
             return (
-              <View key={date} style={styles.cell}>
+              <Pressable
+                key={date}
+                accessibilityRole="button"
+                accessibilityLabel={formatLongDate(date)}
+                accessibilityState={{ selected: date === selected, disabled: future }}
+                disabled={future}
+                onPress={() => setSelected(date)}
+                style={styles.cell}>
                 <View
                   style={[
                     styles.day,
                     full && { backgroundColor: theme.accent },
                     partial && { backgroundColor: tint(theme.accent, 0.22) },
                     date === today && !full && { borderWidth: 1.5, borderColor: theme.accent },
+                    date === selected && { borderWidth: 2, borderColor: theme.text },
                   ]}>
                   <ThemedText
                     type={full ? 'smallBold' : 'small'}
@@ -138,11 +163,18 @@ export default function HistoryScreen() {
                     {fromKey(date).getDate()}
                   </ThemedText>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>
       </ThemedView>
+
+      <DayEditor
+        date={selected}
+        habits={shown}
+        checks={checks}
+        onToggle={(id) => toggleCheck(id, selected)}
+      />
 
       <View style={styles.stats}>
         {stats.map(({ habit, rate, streak }) => (
@@ -166,6 +198,70 @@ export default function HistoryScreen() {
         ))}
       </View>
     </Screen>
+  );
+}
+
+type DayEditorProps = {
+  date: DateKey;
+  habits: Habit[];
+  checks: Checks;
+  onToggle: (habitId: string) => void;
+};
+
+/** Check or uncheck the routines of a past day, for days the check was forgotten */
+function DayEditor({ date, habits, checks, onToggle }: DayEditorProps) {
+  const theme = useTheme();
+  const scheduled = habits.filter((h) => isScheduled(h, date));
+  return (
+    <View style={styles.dayEditor}>
+      <View style={styles.dayEditorHeader}>
+        <ThemedText type="heading">{formatLongDate(date)}</ThemedText>
+        {date !== todayKey() && (
+          <ThemedText type="caption" themeColor="textSecondary">
+            눌러서 체크를 고칠 수 있어요
+          </ThemedText>
+        )}
+      </View>
+      <ThemedView type="backgroundElement" style={styles.dayCard}>
+        {scheduled.length === 0 ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.dayEmpty}>
+            이날은 할 루틴이 없었어요
+          </ThemedText>
+        ) : (
+          scheduled.map((habit, i) => {
+            const checked = isChecked(checks, habit.id, date);
+            const point = HabitColors[habit.color];
+            return (
+              <Pressable
+                key={habit.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={habit.name}
+                onPress={() => onToggle(habit.id)}
+                style={({ pressed }) => [
+                  styles.dayRow,
+                  i > 0 && {
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: theme.border,
+                  },
+                  pressed && styles.pressed,
+                ]}>
+                <Doodle
+                  character={habit.character}
+                  color={point}
+                  mood={checked ? 'happy' : 'idle'}
+                  size={36}
+                />
+                <ThemedText style={styles.flex} numberOfLines={1}>
+                  {habit.name}
+                </ThemedText>
+                <CheckBubble checked={checked} color={point} size={28} />
+              </Pressable>
+            );
+          })
+        )}
+      </ThemedView>
+    </View>
   );
 }
 
@@ -260,6 +356,32 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dayEditor: {
+    gap: Layout.titleGap,
+  },
+  dayEditorHeader: {
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+  dayCard: {
+    borderRadius: Layout.cardRadius,
+    overflow: 'hidden',
+  },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 56,
+    paddingVertical: 8,
+    paddingHorizontal: Layout.cardPadding,
+  },
+  dayEmpty: {
+    padding: Layout.cardPadding,
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
   },
   stats: {
     gap: Layout.itemGap,

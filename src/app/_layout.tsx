@@ -5,13 +5,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { UndoToast } from '@/components/undo-toast';
 import { Colors, FontFamily } from '@/constants/theme';
+import { useReminderSync } from '@/hooks/use-reminder-sync';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[colorScheme];
+  useReminderSync();
   const [fontsLoaded] = useFonts({
     [FontFamily.regular]: require('@/assets/fonts/Pretendard-Regular.otf'),
     [FontFamily.semibold]: require('@/assets/fonts/Pretendard-SemiBold.otf'),
@@ -47,7 +50,10 @@ export default function RootLayout() {
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', title: '' }} />
         <Stack.Screen name="friend/[id]" options={{ title: '' }} />
         <Stack.Screen name="pro" options={{ presentation: 'modal', title: '' }} />
+        <Stack.Screen name="reminders" options={{ title: '알림' }} />
+        <Stack.Screen name="backup" options={{ title: '백업' }} />
       </Stack>
+      <UndoToast />
     </ThemeProvider>
   );
 }
