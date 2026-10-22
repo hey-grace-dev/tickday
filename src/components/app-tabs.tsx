@@ -21,6 +21,11 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="friends">
+        <NativeTabs.Trigger.Label>친구들</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="pawprint" md="pets" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="history">
         <NativeTabs.Trigger.Label>기록</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />

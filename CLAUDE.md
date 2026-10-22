@@ -31,7 +31,7 @@ All EAS workflows need the `EXPO_TOKEN` repo secret.
 
 ## App structure
 
-- `src/app/(tabs)/`: 오늘 (`index`), 기록 (`history`), 설정 (`settings`). Tabs use `NativeTabs` on
+- `src/app/(tabs)/`: 오늘 (`index`), 친구들 (`friends`), 기록 (`history`), 설정 (`settings`). Tabs use `NativeTabs` on
   device and a custom bottom bar on web (`src/components/app-tabs.web.tsx`).
 - `src/app/habit/[id].tsx`: create (`/habit/new`) / edit modal. `src/app/pro.tsx`: one-time purchase
   screen (purchase not wired up yet).
@@ -41,6 +41,7 @@ All EAS workflows need the `EXPO_TOKEN` repo secret.
 - Product concept (keep it distinct from goal apps like 「오늘의목표」): users keep **routines**
   (code still calls them `Habit`), grouped by time of day (아침/오후/저녁/언제든), checked with one
   tap. Each routine has a hand-drawn character (`src/components/doodle.tsx`, no emoji anywhere) that
-  grows with total checks (Lv.1-4: sparkles, flower, crown).
+  grows with total checks (Lv.1-5 at 0/3/10/30/66 checks: body gets bigger, then sparkles, flower,
+  crown). Growth is shown in the 친구들 tab (`friends`) and per-character page (`src/app/friend/[id].tsx`).
 - Web pages are statically rendered at build time, so anything that depends on "now" or stored data
   must wait for `useHydrated()` to avoid hydration mismatches.

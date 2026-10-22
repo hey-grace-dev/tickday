@@ -25,6 +25,9 @@ export default function AppTabs() {
           <TabTrigger name="index" href="/" asChild>
             <TabButton icon="check_circle">오늘</TabButton>
           </TabTrigger>
+          <TabTrigger name="friends" href="/friends" asChild>
+            <TabButton icon="pets">친구들</TabButton>
+          </TabTrigger>
           <TabTrigger name="history" href="/history" asChild>
             <TabButton icon="calendar_month">기록</TabButton>
           </TabTrigger>

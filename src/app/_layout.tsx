@@ -45,6 +45,7 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', title: '' }} />
+        <Stack.Screen name="friend/[id]" options={{ title: '' }} />
         <Stack.Screen name="pro" options={{ presentation: 'modal', title: '' }} />
       </Stack>
     </ThemeProvider>

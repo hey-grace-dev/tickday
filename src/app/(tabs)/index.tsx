@@ -11,7 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { FontFamily, HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatLongDate, todayKey } from '@/lib/date';
-import { LEVEL_NAMES, levelFor, totalChecks } from '@/lib/growth';
+import { LEVEL_NAMES, levelFor, levelProgress, totalChecks } from '@/lib/growth';
 import {
   currentStreak,
   currentTimeSlot,
@@ -75,6 +75,7 @@ export default function TodayScreen() {
                         checked={isChecked(checks, habit.id, today)}
                         streak={currentStreak(habit, checks, today)}
                         level={levelFor(totalChecks(checks, habit.id))}
+                        progress={levelProgress(totalChecks(checks, habit.id))}
                         onToggle={() => toggle(habit)}
                         onLongPress={() => router.push(`/habit/${habit.id}`)}
                       />
@@ -132,8 +133,11 @@ function LevelUpCard({ habit, level, onClose }: { habit: Habit; level: number; o
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityHint="눌러서 닫기"
-      onPress={onClose}
+      accessibilityHint="눌러서 캐릭터 보기"
+      onPress={() => {
+        onClose();
+        router.push(`/friend/${habit.id}`);
+      }}
       style={[styles.levelUp, { backgroundColor: tint(point, 0.22) }]}>
       <Doodle character={habit.character} color={point} mood="happy" level={level} size={64} arms />
       <View style={styles.flex}>

@@ -11,6 +11,7 @@ import Animated, {
 import { CheckBubble } from '@/components/check-bubble';
 import { type Character, Doodle } from '@/components/doodle';
 import { ThemedText } from '@/components/themed-text';
+import { LEVEL_NAMES } from '@/lib/growth';
 import { type HabitColor, HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -21,6 +22,8 @@ type HabitRowProps = {
   checked: boolean;
   streak: number;
   level: number;
+  /** 0-1 progress toward the next level */
+  progress: number;
   onToggle: () => void;
   onLongPress: () => void;
 };
@@ -33,6 +36,7 @@ export function HabitRow({
   checked,
   streak,
   level,
+  progress,
   onToggle,
   onLongPress,
 }: HabitRowProps) {
@@ -77,10 +81,15 @@ export function HabitRow({
         <ThemedText type="semibold" numberOfLines={2}>
           {name}
         </ThemedText>
-        <ThemedText type="caption" themeColor="textSecondary">
-          Lv.{level}
-          {streak > 0 ? ` · ${streak}일 연속` : ''}
-        </ThemedText>
+        <View style={styles.meta}>
+          <ThemedText type="caption" themeColor="textSecondary">
+            Lv.{level} {LEVEL_NAMES[level - 1]}
+            {streak > 0 ? ` · ${streak}일 연속` : ''}
+          </ThemedText>
+          <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
+            <View style={[styles.fill, { backgroundColor: point, width: `${progress * 100}%` }]} />
+          </View>
+        </View>
       </View>
       <Animated.View style={bounce}>
         <CheckBubble checked={checked} color={point} />
@@ -104,6 +113,22 @@ const styles = StyleSheet.create({
   },
   texts: {
     flex: 1,
-    gap: 2,
+    gap: 4,
+  },
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  track: {
+    flex: 1,
+    maxWidth: 72,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: 2,
   },
 });
