@@ -52,9 +52,7 @@ export function TabButton({
   return (
     <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <SymbolView name={{ web: icon }} tintColor={color} size={24} />
-      <ThemedText style={[styles.label, { color }]}>
-        {children}
-      </ThemedText>
+      <ThemedText style={[styles.label, { color }]}>{children}</ThemedText>
     </Pressable>
   );
 }

@@ -11,9 +11,9 @@ import Animated, {
 import { CheckBubble } from '@/components/check-bubble';
 import { type Character, Doodle } from '@/components/doodle';
 import { ThemedText } from '@/components/themed-text';
-import { LEVEL_NAMES } from '@/lib/growth';
-import { type HabitColor, HabitColors, Layout, tint } from '@/constants/theme';
+import { FontFamily, type HabitColor, HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { EXP_PER_CHECK, type Growth } from '@/lib/growth';
 
 type HabitRowProps = {
   name: string;
@@ -21,9 +21,7 @@ type HabitRowProps = {
   color: HabitColor;
   checked: boolean;
   streak: number;
-  level: number;
-  /** 0-1 progress toward the next level */
-  progress: number;
+  growth: Growth;
   onToggle: () => void;
   onLongPress: () => void;
 };
@@ -35,8 +33,7 @@ export function HabitRow({
   color,
   checked,
   streak,
-  level,
-  progress,
+  growth,
   onToggle,
   onLongPress,
 }: HabitRowProps) {
@@ -44,6 +41,12 @@ export function HabitRow({
   const point = HabitColors[color];
   const scale = useSharedValue(1);
   const bounce = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  // "+10 EXP" floats up from the check when it's ticked
+  const gain = useSharedValue(0);
+  const gainStyle = useAnimatedStyle(() => ({
+    opacity: gain.get() === 0 ? 0 : 1 - gain.get(),
+    transform: [{ translateY: -22 * gain.get() }],
+  }));
 
   const handlePress = () => {
     if (Platform.OS !== 'web') {
@@ -53,6 +56,7 @@ export function HabitRow({
     }
     if (!checked) {
       scale.set(withSequence(withTiming(0.8, { duration: 80 }), withSpring(1, { damping: 6 })));
+      gain.set(withSequence(withTiming(0.001, { duration: 0 }), withTiming(1, { duration: 900 })));
     }
     onToggle();
   };
@@ -74,26 +78,43 @@ export function HabitRow({
         character={character}
         color={point}
         mood={checked ? 'happy' : 'idle'}
-        level={level}
+        level={growth.level}
         size={52}
       />
       <View style={styles.texts}>
         <ThemedText type="semibold" numberOfLines={2}>
           {name}
+          {streak > 0 && (
+            <ThemedText type="caption" themeColor="textSecondary">
+              {'  '}
+              {streak}일 연속
+            </ThemedText>
+          )}
         </ThemedText>
         <View style={styles.meta}>
-          <ThemedText type="caption" themeColor="textSecondary">
-            Lv.{level} {LEVEL_NAMES[level - 1]}
-            {streak > 0 ? ` · ${streak}일 연속` : ''}
+          <ThemedText type="caption" style={styles.level}>
+            Lv.{growth.level}
           </ThemedText>
           <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
-            <View style={[styles.fill, { backgroundColor: point, width: `${progress * 100}%` }]} />
+            <View
+              style={[styles.fill, { backgroundColor: point, width: `${growth.progress * 100}%` }]}
+            />
           </View>
+          <ThemedText type="caption" themeColor="textSecondary">
+            {growth.nextExp === null ? `${growth.exp} EXP` : `${growth.exp}/${growth.nextExp} EXP`}
+          </ThemedText>
         </View>
       </View>
-      <Animated.View style={bounce}>
-        <CheckBubble checked={checked} color={point} />
-      </Animated.View>
+      <View>
+        <Animated.View style={bounce}>
+          <CheckBubble checked={checked} color={point} />
+        </Animated.View>
+        <Animated.Text
+          pointerEvents="none"
+          style={[styles.gain, { color: theme.accent }, gainStyle]}>
+          +{EXP_PER_CHECK} EXP
+        </Animated.Text>
+      </View>
     </Pressable>
   );
 }
@@ -120,9 +141,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  level: {
+    fontFamily: FontFamily.semibold,
+  },
+  gain: {
+    position: 'absolute',
+    top: -14,
+    right: -6,
+    width: 60,
+    textAlign: 'right',
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+  },
   track: {
     flex: 1,
-    maxWidth: 72,
+    maxWidth: 64,
     height: 4,
     borderRadius: 2,
     overflow: 'hidden',

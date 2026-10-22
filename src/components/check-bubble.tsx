@@ -5,7 +5,15 @@ import { useTheme } from '@/hooks/use-theme';
 const INK = '#2E2A33';
 
 /** Hand-drawn check circle: wobbly outline, filled with the habit color when checked */
-export function CheckBubble({ checked, color, size = 34 }: { checked: boolean; color: string; size?: number }) {
+export function CheckBubble({
+  checked,
+  color,
+  size = 34,
+}: {
+  checked: boolean;
+  color: string;
+  size?: number;
+}) {
   const theme = useTheme();
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36">

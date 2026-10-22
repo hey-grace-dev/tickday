@@ -16,7 +16,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { WEEKDAY_LABELS } from '@/lib/date';
-import { checksToNextLevel, LEVEL_NAMES, levelFor, MAX_LEVEL, totalChecks } from '@/lib/growth';
+import { growthOf, totalChecks } from '@/lib/growth';
 import { DAY_PRESETS, TIME_SLOTS, type TimeSlot } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
@@ -45,8 +45,7 @@ export default function HabitEditScreen() {
   );
   const [time, setTime] = useState<TimeSlot>(habit?.time ?? 'anytime');
   const [days, setDays] = useState<number[]>(habit?.days ?? ALL_DAYS);
-  const level = isNew ? 1 : levelFor(checkCount);
-  const toNext = checksToNextLevel(checkCount);
+  const growth = growthOf(isNew ? 0 : checkCount);
 
   const trimmed = name.trim();
   const canSave = trimmed.length > 0 && days.length > 0;
@@ -108,13 +107,13 @@ export default function HabitEditScreen() {
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.preview, { backgroundColor: tint(point) }]}>
-          <Doodle character={character} color={point} mood="happy" level={level} size={80} />
+          <Doodle character={character} color={point} mood="happy" level={growth.level} size={80} />
           {!isNew && (
             <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              Lv.{level} {LEVEL_NAMES[level - 1]} 단계 ·{' '}
-              {level === MAX_LEVEL || toNext === null
-                ? '다 자랐어요'
-                : `${toNext}번 더 체크하면 자라요`}
+              Lv.{growth.level} {growth.name} ·{' '}
+              {growth.nextExp === null
+                ? `${growth.exp} EXP · 다 자랐어요`
+                : `${growth.exp} / ${growth.nextExp} EXP`}
             </ThemedText>
           )}
           <TextInput
@@ -148,7 +147,12 @@ export default function HabitEditScreen() {
                       borderColor: selected ? point : 'transparent',
                     },
                   ]}>
-                  <Doodle character={c} color={point} mood={selected ? 'happy' : 'idle'} size={52} />
+                  <Doodle
+                    character={c}
+                    color={point}
+                    mood={selected ? 'happy' : 'idle'}
+                    size={52}
+                  />
                 </Pressable>
               );
             })}
@@ -167,7 +171,10 @@ export default function HabitEditScreen() {
                   accessibilityState={{ selected }}
                   onPress={() => setColor(key)}
                   hitSlop={4}
-                  style={[styles.colorRing, { borderColor: selected ? theme.text : 'transparent' }]}>
+                  style={[
+                    styles.colorRing,
+                    { borderColor: selected ? theme.text : 'transparent' },
+                  ]}>
                   <View style={[styles.colorDot, { backgroundColor: HabitColors[key] }]} />
                 </Pressable>
               );

@@ -11,7 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { FontFamily, HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatLongDate, todayKey } from '@/lib/date';
-import { LEVEL_NAMES, levelFor, levelProgress, totalChecks } from '@/lib/growth';
+import { growthOf, habitGrowth, LEVEL_NAMES, totalChecks } from '@/lib/growth';
 import {
   currentStreak,
   currentTimeSlot,
@@ -40,9 +40,9 @@ export default function TodayScreen() {
 
   const toggle = (habit: Habit) => {
     const wasChecked = isChecked(checks, habit.id, today);
-    const before = levelFor(totalChecks(checks, habit.id));
+    const before = growthOf(totalChecks(checks, habit.id)).level;
     toggleCheck(habit.id, today);
-    const after = levelFor(totalChecks(checks, habit.id) + (wasChecked ? -1 : 1));
+    const after = growthOf(totalChecks(checks, habit.id) + (wasChecked ? -1 : 1)).level;
     if (after > before) setLevelUp({ habit, level: after });
   };
 
@@ -64,7 +64,12 @@ export default function TodayScreen() {
               const done = routines.filter((h) => isChecked(checks, h.id, today)).length;
               return (
                 <View key={slot.key} style={styles.slot}>
-                  <SlotHeader label={slot.label} now={slot.key === nowSlot} done={done} total={routines.length} />
+                  <SlotHeader
+                    label={slot.label}
+                    now={slot.key === nowSlot}
+                    done={done}
+                    total={routines.length}
+                  />
                   <View style={styles.list}>
                     {routines.map((habit) => (
                       <HabitRow
@@ -74,8 +79,7 @@ export default function TodayScreen() {
                         color={habit.color}
                         checked={isChecked(checks, habit.id, today)}
                         streak={currentStreak(habit, checks, today)}
-                        level={levelFor(totalChecks(checks, habit.id))}
-                        progress={levelProgress(totalChecks(checks, habit.id))}
+                        growth={habitGrowth(checks, habit.id)}
                         onToggle={() => toggle(habit)}
                         onLongPress={() => router.push(`/habit/${habit.id}`)}
                       />
@@ -124,7 +128,15 @@ function SlotHeader({
   );
 }
 
-function LevelUpCard({ habit, level, onClose }: { habit: Habit; level: number; onClose: () => void }) {
+function LevelUpCard({
+  habit,
+  level,
+  onClose,
+}: {
+  habit: Habit;
+  level: number;
+  onClose: () => void;
+}) {
   const point = HabitColors[habit.color];
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);

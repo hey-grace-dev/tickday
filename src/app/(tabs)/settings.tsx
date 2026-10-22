@@ -11,7 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
-import { levelFor, totalChecks } from '@/lib/growth';
+import { habitGrowth } from '@/lib/growth';
 import { describeDays, FREE_HABIT_LIMIT, TIME_SLOTS } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
@@ -45,7 +45,9 @@ export default function SettingsScreen() {
         <View style={styles.flex}>
           <ThemedText type="semibold">{isPro ? '틱데이 Pro 사용 중' : '틱데이 Pro'}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {isPro ? '응원해 주셔서 고마워요' : `무료는 루틴 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
+            {isPro
+              ? '응원해 주셔서 고마워요'
+              : `무료는 루틴 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
           </ThemedText>
         </View>
         <Chevron />
@@ -64,7 +66,7 @@ export default function SettingsScreen() {
                 <Doodle
                   character={h.character}
                   color={HabitColors[h.color]}
-                  level={levelFor(totalChecks(checks, h.id))}
+                  level={habitGrowth(checks, h.id).level}
                   size={40}
                 />
               }

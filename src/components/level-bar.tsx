@@ -1,6 +1,6 @@
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View } from 'react-native';
 
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from '@/hooks/use-theme';
 
 /** Thin progress bar toward the next growth level */
 export function LevelBar({
@@ -22,8 +22,7 @@ export function LevelBar({
           borderRadius: height / 2,
           backgroundColor: theme.backgroundSelected,
         },
-      ]}
-    >
+      ]}>
       <View
         style={[
           styles.fill,
@@ -40,10 +39,10 @@ export function LevelBar({
 
 const styles = StyleSheet.create({
   track: {
-    alignSelf: "stretch",
-    overflow: "hidden",
+    alignSelf: 'stretch',
+    overflow: 'hidden',
   },
   fill: {
-    height: "100%",
+    height: '100%',
   },
 });

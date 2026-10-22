@@ -9,7 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type DateKey, fromKey, monthGrid, todayKey, WEEKDAY_LABELS } from '@/lib/date';
-import { levelFor, totalChecks } from '@/lib/growth';
+import { habitGrowth } from '@/lib/growth';
 import { type Checks, currentStreak, type Habit, isChecked, isScheduled } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
@@ -86,14 +86,24 @@ export default function HistoryScreen() {
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <View style={styles.monthHeader}>
-          <IconButton sf="chevron.left" md="chevron_left" label="이전 달" onPress={() => shiftMonth(-1)} />
+          <IconButton
+            sf="chevron.left"
+            md="chevron_left"
+            label="이전 달"
+            onPress={() => shiftMonth(-1)}
+          />
           <ThemedText type="semibold">
             {month.year}년 {month.month + 1}월
           </ThemedText>
           {isCurrentMonth ? (
             <View style={styles.iconPlaceholder} />
           ) : (
-            <IconButton sf="chevron.right" md="chevron_right" label="다음 달" onPress={() => shiftMonth(1)} />
+            <IconButton
+              sf="chevron.right"
+              md="chevron_right"
+              label="다음 달"
+              onPress={() => shiftMonth(1)}
+            />
           )}
         </View>
 
@@ -140,7 +150,7 @@ export default function HistoryScreen() {
             <Doodle
               character={habit.character}
               color={HabitColors[habit.color]}
-              level={levelFor(totalChecks(checks, habit.id))}
+              level={habitGrowth(checks, habit.id).level}
               size={44}
             />
             <ThemedText type="semibold" style={styles.flex} numberOfLines={1}>
