@@ -1,12 +1,14 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { type ReactNode } from 'react';
+import { SymbolView } from 'expo-symbols';
+import { Fragment, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Doodle } from '@/components/doodle';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { HabitColors, Radius, Spacing } from '@/constants/theme';
+import { HabitColors, Layout } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { describeDays, FREE_HABIT_LIMIT } from '@/lib/habits';
@@ -29,25 +31,34 @@ export default function SettingsScreen() {
 
   return (
     <Screen title="설정">
-      <Section title="틱데이 Pro">
-        <Row
-          label={isPro ? '👑 Pro 사용 중' : '👑 Pro 잠금 해제'}
-          detail={isPro ? '감사합니다!' : `무료는 습관 ${FREE_HABIT_LIMIT}개까지`}
-          onPress={() => router.push('/pro')}
-        />
-      </Section>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/pro')}
+        style={({ pressed }) => [
+          styles.proCard,
+          { backgroundColor: theme.backgroundElement },
+          pressed && styles.pressed,
+        ]}>
+        <Doodle character="chick" color={HabitColors.yellow} mood="happy" size={52} />
+        <View style={styles.flex}>
+          <ThemedText type="semibold">{isPro ? '틱데이 Pro 사용 중' : '틱데이 Pro'}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {isPro ? '응원해 주셔서 고마워요' : `무료는 습관 ${FREE_HABIT_LIMIT}개까지 만들 수 있어요`}
+          </ThemedText>
+        </View>
+        <Chevron />
+      </Pressable>
 
-      <Section title={`습관 ${habits.length}개`}>
+      <Section title={`내 습관 ${habits.length}개`}>
         {habits.length === 0 ? (
-          <Row label="아직 습관이 없어요" />
+          <Row label="아직 습관이 없어요" muted />
         ) : (
           habits.map((h) => (
             <Row
               key={h.id}
               label={h.name}
-              emoji={h.emoji}
-              emojiBg={HabitColors[h.color]}
               detail={describeDays(h.days)}
+              leading={<Doodle character={h.character} color={HabitColors[h.color]} size={36} />}
               onPress={() => router.push(`/habit/${h.id}`)}
             />
           ))
@@ -55,25 +66,43 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="데이터">
-        <Row label="🔒 데이터는 이 기기에만 저장돼요" />
+        <Row label="기록은 이 기기에만 저장돼요" muted />
         <Row label="모든 데이터 삭제" color={theme.danger} onPress={reset} />
       </Section>
 
-      <ThemedText type="small" themeColor="textSecondary" style={styles.version}>
-        틱데이 {Constants.expoConfig?.version} · 오늘도 톡 ✓
+      <ThemedText type="caption" themeColor="textSecondary" style={styles.version}>
+        틱데이 {Constants.expoConfig?.version}
       </ThemedText>
     </Screen>
   );
 }
 
+function Chevron() {
+  const theme = useTheme();
+  return (
+    <SymbolView
+      name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+      tintColor={theme.textSecondary}
+      size={18}
+    />
+  );
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const theme = useTheme();
+  const rows = Array.isArray(children) ? children : [children];
   return (
     <View style={styles.section}>
-      <ThemedText type="display" themeColor="textSecondary" style={styles.sectionTitle}>
+      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
         {title}
       </ThemedText>
       <ThemedView type="backgroundElement" style={styles.card}>
-        {children}
+        {rows.map((row, i) => (
+          <Fragment key={i}>
+            {i > 0 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
+            {row}
+          </Fragment>
+        ))}
       </ThemedView>
     </View>
   );
@@ -83,20 +112,20 @@ type RowProps = {
   label: string;
   detail?: string;
   color?: string;
-  emoji?: string;
-  emojiBg?: string;
+  muted?: boolean;
+  leading?: ReactNode;
   onPress?: () => void;
 };
 
-function Row({ label, detail, color, emoji, emojiBg, onPress }: RowProps) {
+function Row({ label, detail, color, muted, leading, onPress }: RowProps) {
   const content = (
     <>
-      {emoji && (
-        <View style={[styles.rowEmoji, { backgroundColor: emojiBg }]}>
-          <ThemedText style={styles.rowEmojiText}>{emoji}</ThemedText>
-        </View>
-      )}
-      <ThemedText style={[styles.rowLabel, color ? { color } : undefined]} numberOfLines={1}>
+      {leading}
+      <ThemedText
+        type={muted ? 'small' : 'default'}
+        themeColor={muted ? 'textSecondary' : undefined}
+        style={[styles.flex, color ? { color } : undefined]}
+        numberOfLines={1}>
         {label}
       </ThemedText>
       {detail && (
@@ -104,6 +133,7 @@ function Row({ label, detail, color, emoji, emojiBg, onPress }: RowProps) {
           {detail}
         </ThemedText>
       )}
+      {onPress && !color && <Chevron />}
     </>
   );
   if (!onPress) return <View style={styles.row}>{content}</View>;
@@ -118,38 +148,37 @@ function Row({ label, detail, color, emoji, emojiBg, onPress }: RowProps) {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  proCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: Layout.cardPadding,
+    borderRadius: Layout.cardRadius,
+  },
   section: {
-    gap: Spacing.two,
+    gap: Layout.titleGap,
   },
   sectionTitle: {
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: 4,
   },
   card: {
-    borderRadius: Radius.card,
+    borderRadius: Layout.cardRadius,
     overflow: 'hidden',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: Layout.cardPadding,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    minHeight: 52,
-  },
-  rowLabel: {
-    flex: 1,
-  },
-  rowEmoji: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowEmojiText: {
-    fontSize: 16,
-    lineHeight: 20,
+    gap: 12,
+    minHeight: 56,
+    paddingVertical: 10,
+    paddingHorizontal: Layout.cardPadding,
   },
   pressed: {
     opacity: 0.6,

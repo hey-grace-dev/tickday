@@ -3,6 +3,8 @@ import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { CHARACTERS } from '@/components/doodle';
+import { type HabitColor } from '@/constants/theme';
 import { type DateKey, todayKey } from '@/lib/date';
 import { type Checks, FREE_HABIT_LIMIT, type Habit, type HabitInput } from '@/lib/habits';
 
@@ -51,13 +53,28 @@ export const useHabits = create<HabitState>()(
     }),
     {
       name: 'tickday',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => AsyncStorage),
       migrate: (persisted, version) => {
         const state = persisted as Pick<HabitState, 'habits' | 'checks' | 'isPro'>;
-        if (version < 2) {
-          // v2 added emoji and color
-          state.habits = state.habits.map((h) => ({ ...h, emoji: '🌱', color: 'mint' }));
+        if (version < 3) {
+          // v3 replaced emoji with a drawn character and renamed the color palette
+          const colorMap: Record<string, HabitColor> = {
+            peach: 'coral',
+            lemon: 'yellow',
+            mint: 'green',
+            sky: 'blue',
+            lavender: 'purple',
+            pink: 'pink',
+          };
+          state.habits = state.habits.map((h, i) => {
+            const { emoji: _emoji, ...rest } = h as Habit & { emoji?: string };
+            return {
+              ...rest,
+              character: CHARACTERS[i % CHARACTERS.length],
+              color: colorMap[h.color] ?? 'coral',
+            };
+          });
         }
         return state;
       },

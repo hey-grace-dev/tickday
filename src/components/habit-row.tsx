@@ -8,13 +8,15 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { CheckBubble } from '@/components/check-bubble';
+import { type Character, Doodle } from '@/components/doodle';
 import { ThemedText } from '@/components/themed-text';
-import { type HabitColor, HabitColors, OnHabitColor, Radius, Spacing } from '@/constants/theme';
+import { type HabitColor, HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type HabitRowProps = {
   name: string;
-  emoji: string;
+  character: Character;
   color: HabitColor;
   checked: boolean;
   streak: number;
@@ -25,7 +27,7 @@ type HabitRowProps = {
 /** The whole row is the tap target: one tap checks the habit off */
 export function HabitRow({
   name,
-  emoji,
+  character,
   color,
   checked,
   streak,
@@ -33,7 +35,7 @@ export function HabitRow({
   onLongPress,
 }: HabitRowProps) {
   const theme = useTheme();
-  const pastel = HabitColors[color];
+  const point = HabitColors[color];
   const scale = useSharedValue(1);
   const bounce = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
@@ -49,8 +51,6 @@ export function HabitRow({
     onToggle();
   };
 
-  const textColor = checked ? OnHabitColor : theme.text;
-
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -61,31 +61,22 @@ export function HabitRow({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
-        { backgroundColor: checked ? pastel : theme.backgroundElement },
+        { backgroundColor: checked ? tint(point) : theme.backgroundElement },
         pressed && styles.pressed,
       ]}>
-      <View style={[styles.emoji, { backgroundColor: checked ? '#ffffff99' : pastel }]}>
-        <ThemedText style={styles.emojiText}>{emoji}</ThemedText>
-      </View>
+      <Doodle character={character} color={point} mood={checked ? 'happy' : 'idle'} size={48} />
       <View style={styles.texts}>
-        <ThemedText type="display" style={{ color: textColor }} numberOfLines={2}>
+        <ThemedText type="semibold" numberOfLines={2}>
           {name}
         </ThemedText>
         {streak > 0 && (
-          <ThemedText type="small" style={{ color: checked ? OnHabitColor : theme.textSecondary }}>
-            🔥 {streak}일 연속
+          <ThemedText type="caption" themeColor="textSecondary">
+            {streak}일 연속
           </ThemedText>
         )}
       </View>
-      <Animated.View
-        style={[
-          styles.check,
-          checked
-            ? { backgroundColor: theme.accent, borderColor: theme.accent }
-            : { borderColor: pastel, backgroundColor: theme.backgroundElement },
-          bounce,
-        ]}>
-        {checked && <ThemedText style={[styles.checkMark, { color: theme.onAccent }]}>✓</ThemedText>}
+      <Animated.View style={bounce}>
+        <CheckBubble checked={checked} color={point} />
       </Animated.View>
     </Pressable>
   );
@@ -95,40 +86,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Radius.card,
-    minHeight: 76,
+    gap: 14,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: Layout.cardPadding,
+    borderRadius: Layout.cardRadius,
   },
   pressed: {
     transform: [{ scale: 0.98 }],
   },
-  emoji: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emojiText: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
   texts: {
     flex: 1,
     gap: 2,
-  },
-  check: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkMark: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: 900,
   },
 });

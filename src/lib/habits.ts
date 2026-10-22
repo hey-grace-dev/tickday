@@ -1,10 +1,11 @@
+import { type Character } from '@/components/doodle';
 import { type HabitColor } from '@/constants/theme';
 import { addDays, type DateKey, weekdayOf } from '@/lib/date';
 
 export type Habit = {
   id: string;
   name: string;
-  emoji: string;
+  character: Character;
   color: HabitColor;
   /** Weekdays the habit is scheduled on, 0 = Sunday */
   days: number[];
@@ -12,17 +13,12 @@ export type Habit = {
   startDate: DateKey;
 };
 
-export type HabitInput = Pick<Habit, 'name' | 'emoji' | 'color' | 'days'>;
+export type HabitInput = Pick<Habit, 'name' | 'character' | 'color' | 'days'>;
 
 /** habit id -> dates it was checked */
 export type Checks = Record<string, DateKey[]>;
 
 export const FREE_HABIT_LIMIT = 3;
-
-export const HABIT_EMOJIS = [
-  '💧', '🏃', '📚', '🧘', '🥗', '💊', '😴', '✍️',
-  '🎸', '🧹', '🌱', '☀️', '💪', '🐶', '🍎', '📵',
-] as const;
 
 export const DAY_PRESETS = [
   { label: '매일', days: [0, 1, 2, 3, 4, 5, 6] },

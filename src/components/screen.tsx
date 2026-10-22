@@ -4,30 +4,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Layout, MaxContentWidth } from '@/constants/theme';
 
 type ScreenProps = {
   title: string;
-  subtitle?: string;
+  /** Small line above the title */
+  overline?: string;
   /** Rendered to the right of the title */
   action?: ReactNode;
   children: ReactNode;
 };
 
-/** Scrollable tab screen with a large title header */
-export function Screen({ title, subtitle, action, children }: ScreenProps) {
+/** Scrollable tab screen with a title header; top-level children are spaced by `sectionGap` */
+export function Screen({ title, overline, action, children }: ScreenProps) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
             <View style={styles.titles}>
-              {subtitle && (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {subtitle}
+              {overline !== undefined && (
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {overline}
                 </ThemedText>
               )}
-              <ThemedText type="subtitle">{title}</ThemedText>
+              <ThemedText type="title">{title}</ThemedText>
             </View>
             {action}
           </View>
@@ -46,17 +47,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    padding: Spacing.three,
-    paddingBottom: Platform.OS === 'web' ? Spacing.four : BottomTabInset + Spacing.four,
-    gap: Spacing.three,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'web' ? 32 : BottomTabInset + 32,
+    gap: Layout.sectionGap,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Spacing.three,
+    gap: 12,
+    minHeight: 56,
   },
   titles: {
     flexShrink: 1,
+    gap: 2,
   },
 });

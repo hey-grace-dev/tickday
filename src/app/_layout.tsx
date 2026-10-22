@@ -1,18 +1,22 @@
-import { Jua_400Regular, useFonts } from '@expo-google-fonts/jua';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { Colors, DisplayFont } from '@/constants/theme';
+import { Colors, FontFamily } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[colorScheme];
-  const [fontsLoaded] = useFonts({ [DisplayFont]: Jua_400Regular });
+  const [fontsLoaded] = useFonts({
+    [FontFamily.regular]: require('@/assets/fonts/Pretendard-Regular.otf'),
+    [FontFamily.semibold]: require('@/assets/fonts/Pretendard-SemiBold.otf'),
+    [FontFamily.bold]: require('@/assets/fonts/Pretendard-Bold.otf'),
+  });
 
   if (!fontsLoaded) return null;
 
@@ -25,6 +29,7 @@ export default function RootLayout() {
       background: colors.background,
       card: colors.background,
       text: colors.text,
+      border: colors.border,
     },
   };
 
@@ -34,13 +39,13 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShadowVisible: false,
-          headerTitleStyle: { fontFamily: DisplayFont, fontSize: 20 },
+          headerTitleStyle: { fontFamily: FontFamily.bold, fontSize: 17 },
           headerTintColor: colors.text,
           contentStyle: { backgroundColor: colors.background },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', title: '' }} />
-        <Stack.Screen name="pro" options={{ presentation: 'modal', title: '틱데이 Pro' }} />
+        <Stack.Screen name="pro" options={{ presentation: 'modal', title: '' }} />
       </Stack>
     </ThemeProvider>
   );

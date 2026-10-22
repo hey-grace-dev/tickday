@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Doodle } from '@/components/doodle';
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { HabitColors, OnHabitColor, Radius, Spacing } from '@/constants/theme';
+import { HabitColors, Layout, tint } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type DateKey, fromKey, monthGrid, todayKey, WEEKDAY_LABELS } from '@/lib/date';
 import { type Checks, currentStreak, type Habit, isChecked, isScheduled } from '@/lib/habits';
@@ -16,12 +17,6 @@ function dayRatio(habits: Habit[], checks: Checks, date: DateKey): number | null
   const scheduled = habits.filter((h) => isScheduled(h, date));
   if (scheduled.length === 0) return null;
   return scheduled.filter((h) => isChecked(checks, h.id, date)).length / scheduled.length;
-}
-
-function dayColor(ratio: number, theme: ReturnType<typeof useTheme>) {
-  if (ratio === 0) return theme.backgroundSelected;
-  if (ratio === 1) return theme.accent;
-  return HabitColors.peach;
 }
 
 export default function HistoryScreen() {
@@ -46,7 +41,7 @@ export default function HistoryScreen() {
 
   // Monthly rate per habit, over scheduled days up to today
   const pastDays = cells.filter((d): d is DateKey => d !== null && d <= today);
-  const stats = habits.map((habit) => {
+  const stats = shown.map((habit) => {
     const scheduled = pastDays.filter((d) => isScheduled(habit, d));
     const done = scheduled.filter((d) => isChecked(checks, habit.id, d)).length;
     return {
@@ -56,145 +51,123 @@ export default function HistoryScreen() {
     };
   });
 
-  return (
-    <Screen title="기록">
-      {habits.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <ThemedText style={styles.emptyEmoji}>📅</ThemedText>
+  if (habits.length === 0) {
+    return (
+      <Screen title="기록">
+        <View style={styles.empty}>
+          <Doodle character="bear" color={HabitColors.yellow} mood="sleepy" size={96} />
           <ThemedText themeColor="textSecondary" style={styles.center}>
             습관을 추가하면 여기에 기록이 쌓여요
           </ThemedText>
         </View>
-      ) : (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.filters}>
-              <FilterChip label="전체" selected={!filterId} onPress={() => setFilterId(null)} />
-              {habits.map((h) => (
-                <FilterChip
-                  key={h.id}
-                  label={`${h.emoji} ${h.name}`}
-                  selected={filterId === h.id}
-                  onPress={() => setFilterId(h.id)}
-                />
-              ))}
-            </View>
-          </ScrollView>
+      </Screen>
+    );
+  }
 
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <View style={styles.monthHeader}>
-              <IconButton
-                sf="chevron.left"
-                md="chevron_left"
-                label="이전 달"
-                onPress={() => shiftMonth(-1)}
-              />
-              <ThemedText type="display">
-                {month.year}년 {month.month + 1}월
+  return (
+    <Screen title="기록">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filters}>
+        <FilterChip label="전체" selected={!filterId} onPress={() => setFilterId(null)} />
+        {habits.map((h) => (
+          <FilterChip
+            key={h.id}
+            label={h.name}
+            dot={HabitColors[h.color]}
+            selected={filterId === h.id}
+            onPress={() => setFilterId(h.id)}
+          />
+        ))}
+      </ScrollView>
+
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <View style={styles.monthHeader}>
+          <IconButton sf="chevron.left" md="chevron_left" label="이전 달" onPress={() => shiftMonth(-1)} />
+          <ThemedText type="semibold">
+            {month.year}년 {month.month + 1}월
+          </ThemedText>
+          {isCurrentMonth ? (
+            <View style={styles.iconPlaceholder} />
+          ) : (
+            <IconButton sf="chevron.right" md="chevron_right" label="다음 달" onPress={() => shiftMonth(1)} />
+          )}
+        </View>
+
+        <View style={styles.grid}>
+          {WEEKDAY_LABELS.map((label) => (
+            <View key={label} style={styles.weekday}>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {label}
               </ThemedText>
-              {isCurrentMonth ? (
-                <View style={styles.iconPlaceholder} />
-              ) : (
-                <IconButton
-                  sf="chevron.right"
-                  md="chevron_right"
-                  label="다음 달"
-                  onPress={() => shiftMonth(1)}
-                />
-              )}
             </View>
-
-            <View style={styles.grid}>
-              {WEEKDAY_LABELS.map((label) => (
-                <View key={label} style={styles.cell}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {label}
+          ))}
+          {cells.map((date, i) => {
+            if (!date) return <View key={`pad-${i}`} style={styles.cell} />;
+            const future = date > today;
+            const ratio = future ? null : dayRatio(shown, checks, date);
+            const full = ratio === 1;
+            const partial = ratio !== null && ratio > 0 && ratio < 1;
+            return (
+              <View key={date} style={styles.cell}>
+                <View
+                  style={[
+                    styles.day,
+                    full && { backgroundColor: theme.accent },
+                    partial && { backgroundColor: tint(theme.accent, 0.22) },
+                    date === today && !full && { borderWidth: 1.5, borderColor: theme.accent },
+                  ]}>
+                  <ThemedText
+                    type={full ? 'smallBold' : 'small'}
+                    style={{
+                      color: full ? theme.onAccent : future ? theme.textSecondary : theme.text,
+                    }}>
+                    {fromKey(date).getDate()}
                   </ThemedText>
                 </View>
-              ))}
-              {cells.map((date, i) => {
-                if (!date) return <View key={`pad-${i}`} style={styles.cell} />;
-                const future = date > today;
-                const ratio = future ? null : dayRatio(shown, checks, date);
-                const full = ratio === 1;
-                return (
-                  <View key={date} style={styles.cell}>
-                    <View
-                      style={[
-                        styles.day,
-                        ratio !== null && { backgroundColor: dayColor(ratio, theme) },
-                        date === today && { borderColor: theme.text, borderWidth: 2 },
-                      ]}>
-                      <ThemedText
-                        type="small"
-                        style={{
-                          color: full
-                            ? theme.onAccent
-                            : ratio
-                              ? OnHabitColor
-                              : future
-                                ? theme.textSecondary
-                                : theme.text,
-                        }}>
-                        {fromKey(date).getDate()}
-                      </ThemedText>
-                    </View>
-                  </View>
-                );
-              })}
+              </View>
+            );
+          })}
+        </View>
+      </ThemedView>
+
+      <View style={styles.stats}>
+        {stats.map(({ habit, rate, streak }) => (
+          <ThemedView key={habit.id} type="backgroundElement" style={styles.statRow}>
+            <Doodle character={habit.character} color={HabitColors[habit.color]} size={40} />
+            <ThemedText type="semibold" style={styles.flex} numberOfLines={1}>
+              {habit.name}
+            </ThemedText>
+            <View style={styles.statValues}>
+              <ThemedText type="smallBold">{rate === null ? '-' : `${rate}%`}</ThemedText>
+              <ThemedText type="caption" themeColor="textSecondary">
+                {streak > 0 ? `${streak}일 연속` : `${month.month + 1}월 달성률`}
+              </ThemedText>
             </View>
           </ThemedView>
-
-          <View style={styles.stats}>
-            {stats
-              .filter((s) => !filterId || s.habit.id === filterId)
-              .map(({ habit, rate, streak }) => (
-                <ThemedView key={habit.id} type="backgroundElement" style={styles.statRow}>
-                  <View style={[styles.statEmoji, { backgroundColor: HabitColors[habit.color] }]}>
-                    <ThemedText style={styles.statEmojiText}>{habit.emoji}</ThemedText>
-                  </View>
-                  <ThemedText type="display" style={styles.statName} numberOfLines={1}>
-                    {habit.name}
-                  </ThemedText>
-                  <View style={styles.statValues}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {month.month + 1}월 {rate === null ? '-' : `${rate}%`}
-                    </ThemedText>
-                    <ThemedText
-                      type="smallBold"
-                      style={{ color: streak > 0 ? theme.accent : theme.textSecondary }}>
-                      🔥 {streak}일
-                    </ThemedText>
-                  </View>
-                </ThemedView>
-              ))}
-          </View>
-        </>
-      )}
+        ))}
+      </View>
     </Screen>
   );
 }
 
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
+type FilterChipProps = { label: string; selected: boolean; onPress: () => void; dot?: string };
+
+function FilterChip({ label, selected, onPress, dot }: FilterChipProps) {
   const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: selected ? theme.accent : theme.backgroundElement }]}>
+      style={[styles.chip, { backgroundColor: selected ? theme.text : theme.backgroundElement }]}>
+      {dot && <View style={[styles.chipDot, { backgroundColor: dot }]} />}
       <ThemedText
-        type="display"
+        type="smallBold"
         numberOfLines={1}
-        style={{ color: selected ? theme.onAccent : theme.text }}>
+        style={{ color: selected ? theme.background : theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -205,29 +178,42 @@ const styles = StyleSheet.create({
   center: {
     textAlign: 'center',
   },
-  emptyBox: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.six,
+  flex: {
+    flex: 1,
   },
-  emptyEmoji: {
-    fontSize: 56,
-    lineHeight: 68,
+  empty: {
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 48,
+  },
+  // Let chips scroll edge to edge while lining up with the screen padding
+  filterScroll: {
+    marginHorizontal: -Layout.screenPadding,
   },
   filters: {
-    flexDirection: 'row',
-    gap: Spacing.two,
+    gap: 8,
+    paddingHorizontal: Layout.screenPadding,
   },
   chip: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     maxWidth: 180,
   },
+  chipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   card: {
-    borderRadius: Radius.card,
-    padding: Spacing.three,
-    gap: Spacing.two,
+    borderRadius: Layout.cardRadius,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 16,
+    gap: 8,
   },
   monthHeader: {
     flexDirection: 'row',
@@ -235,11 +221,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconPlaceholder: {
-    width: 40,
+    width: Layout.touch,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  weekday: {
+    width: `${100 / 7}%`,
+    alignItems: 'center',
+    paddingBottom: 8,
   },
   cell: {
     width: `${100 / 7}%`,
@@ -248,38 +239,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   day: {
-    width: '84%',
-    height: '84%',
+    width: '80%',
+    height: '80%',
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stats: {
-    gap: Spacing.two,
+    gap: Layout.itemGap,
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Radius.card,
-  },
-  statEmoji: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statEmojiText: {
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  statName: {
-    flex: 1,
+    gap: 12,
+    paddingVertical: 12,
+    paddingLeft: 12,
+    paddingRight: Layout.cardPadding,
+    borderRadius: Layout.cardRadius,
   },
   statValues: {
     alignItems: 'flex-end',
+    gap: 2,
   },
 });

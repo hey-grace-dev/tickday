@@ -1,21 +1,22 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { type ReactNode, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { type Character, CHARACTER_NAMES, CHARACTERS, Doodle } from '@/components/doodle';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
+  FontFamily,
   type HabitColor,
   HabitColors,
+  Layout,
   MaxContentWidth,
-  OnHabitColor,
-  Radius,
-  Spacing,
+  tint,
 } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { confirmDestructive } from '@/lib/confirm';
 import { WEEKDAY_LABELS } from '@/lib/date';
-import { DAY_PRESETS, HABIT_EMOJIS } from '@/lib/habits';
+import { DAY_PRESETS } from '@/lib/habits';
 import { useHabits } from '@/store/habits';
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -33,8 +34,10 @@ export default function HabitEditScreen() {
 
   const isNew = id === 'new';
   const [name, setName] = useState(habit?.name ?? '');
-  const [emoji, setEmoji] = useState<string>(habit?.emoji ?? HABIT_EMOJIS[0]);
-  // New habits cycle through the palette so the list stays colorful
+  // New habits cycle through characters and colors so the list stays varied
+  const [character, setCharacter] = useState<Character>(
+    habit?.character ?? CHARACTERS[habitCount % CHARACTERS.length]
+  );
   const [color, setColor] = useState<HabitColor>(
     habit?.color ?? COLOR_KEYS[habitCount % COLOR_KEYS.length]
   );
@@ -42,6 +45,7 @@ export default function HabitEditScreen() {
 
   const trimmed = name.trim();
   const canSave = trimmed.length > 0 && days.length > 0;
+  const point = HabitColors[color];
 
   const toggleDay = (day: number) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()));
@@ -50,7 +54,7 @@ export default function HabitEditScreen() {
 
   const save = () => {
     if (!canSave) return;
-    const input = { name: trimmed, emoji, color, days };
+    const input = { name: trimmed, character, color, days };
     if (isNew) addHabit(input);
     else if (habit) updateHabit(habit.id, input);
     close();
@@ -73,7 +77,10 @@ export default function HabitEditScreen() {
     return (
       <ThemedView style={styles.container}>
         <Stack.Screen options={{ title: '습관 편집' }} />
-        <ThemedText style={styles.missing}>습관을 찾을 수 없어요 🥲</ThemedText>
+        <View style={styles.missing}>
+          <Doodle character="ghost" color={HabitColors.purple} mood="sleepy" size={88} />
+          <ThemedText themeColor="textSecondary">습관을 찾을 수 없어요</ThemedText>
+        </View>
       </ThemedView>
     );
   }
@@ -84,9 +91,9 @@ export default function HabitEditScreen() {
         options={{
           title: isNew ? '새 습관' : '습관 편집',
           headerRight: () => (
-            <Pressable onPress={save} disabled={!canSave} hitSlop={8}>
+            <Pressable onPress={save} disabled={!canSave} hitSlop={10} style={styles.headerButton}>
               <ThemedText
-                type="display"
+                type="semibold"
                 style={{ color: canSave ? theme.accent : theme.textSecondary }}>
                 저장
               </ThemedText>
@@ -95,62 +102,63 @@ export default function HabitEditScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={[styles.preview, { backgroundColor: HabitColors[color] }]}>
-          <View style={styles.previewEmoji}>
-            <ThemedText style={styles.previewEmojiText}>{emoji}</ThemedText>
-          </View>
+        <View style={[styles.preview, { backgroundColor: tint(point) }]}>
+          <Doodle character={character} color={point} mood="happy" size={72} />
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="습관 이름 (예: 물 2L 마시기)"
-            placeholderTextColor={`${OnHabitColor}88`}
+            placeholder="습관 이름을 적어 주세요"
+            placeholderTextColor={theme.textSecondary}
             autoFocus={isNew}
             maxLength={40}
             returnKeyType="done"
             onSubmitEditing={save}
-            style={styles.input}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
           />
         </View>
 
-        <Field label="이모지">
-          <View style={styles.wrap}>
-            {HABIT_EMOJIS.map((e) => (
-              <Pressable
-                key={e}
-                accessibilityRole="button"
-                accessibilityState={{ selected: emoji === e }}
-                onPress={() => setEmoji(e)}
-                style={[
-                  styles.emojiCell,
-                  {
-                    backgroundColor: emoji === e ? HabitColors[color] : theme.backgroundElement,
-                    borderColor: emoji === e ? theme.accent : 'transparent',
-                  },
-                ]}>
-                <ThemedText style={styles.emojiCellText}>{e}</ThemedText>
-              </Pressable>
-            ))}
+        <Field label="캐릭터">
+          <View style={styles.characters}>
+            {CHARACTERS.map((c) => {
+              const selected = character === c;
+              return (
+                <Pressable
+                  key={c}
+                  accessibilityRole="button"
+                  accessibilityLabel={CHARACTER_NAMES[c]}
+                  accessibilityState={{ selected }}
+                  onPress={() => setCharacter(c)}
+                  style={[
+                    styles.characterCell,
+                    {
+                      backgroundColor: selected ? tint(point) : theme.backgroundElement,
+                      borderColor: selected ? point : 'transparent',
+                    },
+                  ]}>
+                  <Doodle character={c} color={point} mood={selected ? 'happy' : 'idle'} size={52} />
+                </Pressable>
+              );
+            })}
           </View>
         </Field>
 
         <Field label="색깔">
           <View style={styles.colors}>
-            {COLOR_KEYS.map((key) => (
-              <Pressable
-                key={key}
-                accessibilityRole="button"
-                accessibilityLabel={key}
-                accessibilityState={{ selected: color === key }}
-                onPress={() => setColor(key)}
-                style={[
-                  styles.colorDot,
-                  {
-                    backgroundColor: HabitColors[key],
-                    borderColor: color === key ? theme.accent : 'transparent',
-                  },
-                ]}
-              />
-            ))}
+            {COLOR_KEYS.map((key) => {
+              const selected = color === key;
+              return (
+                <Pressable
+                  key={key}
+                  accessibilityRole="button"
+                  accessibilityLabel={key}
+                  accessibilityState={{ selected }}
+                  onPress={() => setColor(key)}
+                  hitSlop={4}
+                  style={[styles.colorRing, { borderColor: selected ? theme.text : 'transparent' }]}>
+                  <View style={[styles.colorDot, { backgroundColor: HabitColors[key] }]} />
+                </Pressable>
+              );
+            })}
           </View>
         </Field>
 
@@ -185,40 +193,40 @@ export default function HabitEditScreen() {
           )}
         </Field>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={save}
-          disabled={!canSave}
-          style={({ pressed }) => [
-            styles.saveButton,
-            canSave
-              ? { backgroundColor: theme.accent, boxShadow: '0 4px 12px rgba(255, 138, 128, 0.45)' }
-              : { backgroundColor: theme.backgroundSelected },
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText
-            type="display"
-            style={{ color: canSave ? theme.onAccent : theme.textSecondary }}>
-            {isNew ? '추가하기' : '저장하기'}
-          </ThemedText>
-        </Pressable>
-
-        {!isNew && (
-          <Pressable accessibilityRole="button" onPress={remove} style={styles.deleteButton}>
-            <ThemedText type="small" style={{ color: theme.danger }}>
-              습관 삭제
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={save}
+            disabled={!canSave}
+            style={({ pressed }) => [
+              styles.saveButton,
+              { backgroundColor: canSave ? theme.accent : theme.backgroundSelected },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText
+              type="semibold"
+              style={{ color: canSave ? theme.onAccent : theme.textSecondary }}>
+              {isNew ? '추가하기' : '저장하기'}
             </ThemedText>
           </Pressable>
-        )}
+
+          {!isNew && (
+            <Pressable accessibilityRole="button" onPress={remove} style={styles.deleteButton}>
+              <ThemedText type="smallBold" style={{ color: theme.danger }}>
+                습관 삭제
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
       </ScrollView>
     </ThemedView>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <View style={styles.field}>
-      <ThemedText type="display" themeColor="textSecondary">
+      <ThemedText type="smallBold" themeColor="textSecondary">
         {label}
       </ThemedText>
       {children}
@@ -237,10 +245,10 @@ function Chip({ label, selected, onPress, round }: ChipProps) {
       onPress={onPress}
       style={({ pressed }) => [
         round ? styles.dayChip : styles.chip,
-        { backgroundColor: selected ? theme.accent : theme.backgroundElement },
+        { backgroundColor: selected ? theme.text : theme.backgroundElement },
         pressed && styles.pressed,
       ]}>
-      <ThemedText type="display" style={{ color: selected ? theme.onAccent : theme.text }}>
+      <ThemedText type="smallBold" style={{ color: selected ? theme.background : theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -251,68 +259,68 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // The web header has no built-in side inset, native headers do
+  headerButton: {
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 0,
+  },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    padding: Spacing.three,
-    gap: Spacing.four,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 8,
+    paddingBottom: 40,
+    gap: Layout.sectionGap,
   },
   preview: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Radius.card,
-  },
-  previewEmoji: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffffff99',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewEmojiText: {
-    fontSize: 30,
-    lineHeight: 38,
+    gap: 16,
+    padding: 20,
+    borderRadius: Layout.cardRadius,
   },
   input: {
-    flex: 1,
-    fontSize: 18,
-    color: OnHabitColor,
-    paddingVertical: Spacing.two,
+    alignSelf: 'stretch',
+    fontFamily: FontFamily.semibold,
+    fontSize: 17,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    textAlign: 'center',
     outlineWidth: 0,
   },
   field: {
-    gap: Spacing.two,
+    gap: Layout.titleGap,
   },
-  wrap: {
+  characters: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    justifyContent: 'space-between',
+    rowGap: 10,
   },
-  emojiCell: {
-    width: 48,
-    height: 48,
+  characterCell: {
+    width: '23%',
+    aspectRatio: 1,
     borderRadius: 16,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emojiCellText: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
   colors: {
     flexDirection: 'row',
-    gap: Spacing.three,
+    justifyContent: 'space-between',
+  },
+  colorRing: {
+    width: Layout.touch,
+    height: Layout.touch,
+    borderRadius: Layout.touch / 2,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   colorDot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   days: {
     flexDirection: 'row',
@@ -327,27 +335,34 @@ const styles = StyleSheet.create({
   },
   presets: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: 8,
   },
   chip: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 18,
+  },
+  actions: {
+    gap: 8,
   },
   saveButton: {
+    minHeight: 52,
     alignItems: 'center',
-    paddingVertical: Spacing.three,
-    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    borderRadius: 16,
   },
   deleteButton: {
+    minHeight: Layout.touch,
     alignItems: 'center',
-    paddingVertical: Spacing.two,
+    justifyContent: 'center',
   },
   pressed: {
-    transform: [{ scale: 0.96 }],
+    opacity: 0.8,
   },
   missing: {
-    textAlign: 'center',
-    padding: Spacing.five,
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 64,
   },
 });

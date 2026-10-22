@@ -9,7 +9,7 @@ import {
 import { type AndroidSymbol, SymbolView } from 'expo-symbols';
 import { Pressable, View, StyleSheet } from 'react-native';
 
-import { DisplayFont, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { FontFamily, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ThemedText } from './themed-text';
@@ -57,8 +57,9 @@ export function TabButton({
 }
 
 export function CustomTabList(props: TabListProps) {
+  const theme = useTheme();
   return (
-    <ThemedView type="backgroundElement" style={styles.tabListContainer}>
+    <ThemedView style={[styles.tabListContainer, { borderTopColor: theme.border }]}>
       <View {...props} style={styles.innerContainer} />
     </ThemedView>
   );
@@ -67,15 +68,14 @@ export function CustomTabList(props: TabListProps) {
 const styles = StyleSheet.create({
   tabListContainer: {
     alignItems: 'center',
-    paddingBottom: Spacing.two,
-    borderTopLeftRadius: Radius.card,
-    borderTopRightRadius: Radius.card,
-    boxShadow: '0 -2px 12px rgba(74, 59, 53, 0.08)',
+    paddingTop: 6,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   label: {
-    fontFamily: DisplayFont,
-    fontSize: 13,
-    lineHeight: 18,
+    fontFamily: FontFamily.semibold,
+    fontSize: 11,
+    lineHeight: 14,
   },
   innerContainer: {
     flexDirection: 'row',
@@ -85,7 +85,8 @@ const styles = StyleSheet.create({
   tabButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.two,
+    gap: 2,
+    paddingVertical: 4,
   },
   pressed: {
     opacity: 0.7,

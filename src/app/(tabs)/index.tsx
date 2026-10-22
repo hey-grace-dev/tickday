@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Doodle } from '@/components/doodle';
 import { HabitRow } from '@/components/habit-row';
 import { IconButton } from '@/components/icon-button';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { HabitColors, Layout } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatLongDate, todayKey } from '@/lib/date';
 import { currentStreak, isChecked, isScheduled } from '@/lib/habits';
@@ -29,35 +30,33 @@ export default function TodayScreen() {
   return (
     <Screen
       title="오늘"
-      subtitle={hydrated ? formatLongDate(today) : ' '}
+      overline={hydrated ? formatLongDate(today) : ' '}
       action={<IconButton sf="plus" md="add" label="습관 추가" onPress={addHabit} filled />}>
       {!hydrated ? null : habits.length === 0 ? (
         <EmptyState onAdd={addHabit} />
       ) : (
         <>
           <Cheer done={doneCount} total={todays.length} />
-          <View style={styles.list}>
-            {todays.map((habit) => (
-              <HabitRow
-                key={habit.id}
-                name={habit.name}
-                emoji={habit.emoji}
-                color={habit.color}
-                checked={isChecked(checks, habit.id, today)}
-                streak={currentStreak(habit, checks, today)}
-                onToggle={() => toggleCheck(habit.id, today)}
-                onLongPress={() => router.push(`/habit/${habit.id}`)}
-              />
-            ))}
-          </View>
-          {restCount > 0 && todays.length > 0 && (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              오늘 쉬는 습관 {restCount}개
+          <View style={styles.section}>
+            <View style={styles.list}>
+              {todays.map((habit) => (
+                <HabitRow
+                  key={habit.id}
+                  name={habit.name}
+                  character={habit.character}
+                  color={habit.color}
+                  checked={isChecked(checks, habit.id, today)}
+                  streak={currentStreak(habit, checks, today)}
+                  onToggle={() => toggleCheck(habit.id, today)}
+                  onLongPress={() => router.push(`/habit/${habit.id}`)}
+                />
+              ))}
+            </View>
+            <ThemedText type="caption" themeColor="textSecondary" style={styles.center}>
+              {restCount > 0 && todays.length > 0 ? `오늘 쉬는 습관 ${restCount}개 · ` : ''}
+              길게 누르면 편집할 수 있어요
             </ThemedText>
-          )}
-          <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-            꾹 누르면 편집할 수 있어요
-          </ThemedText>
+          </View>
         </>
       )}
     </Screen>
@@ -65,36 +64,42 @@ export default function TodayScreen() {
 }
 
 function cheerMessage(done: number, total: number) {
-  if (total === 0) return { emoji: '🛋️', text: '오늘은 쉬는 날이에요' };
-  if (done === total) return { emoji: '🎉', text: '오늘 목표 완료! 최고예요' };
-  if (done === 0) return { emoji: '🌱', text: '오늘도 하나씩 해볼까요?' };
-  if (done / total >= 0.5) return { emoji: '💪', text: '거의 다 왔어요!' };
-  return { emoji: '😊', text: '좋은 출발이에요!' };
+  if (total === 0) return { mood: 'sleepy', text: '오늘은 쉬는 날이에요' } as const;
+  if (done === total) return { mood: 'happy', text: '오늘 목표를 다 했어요!' } as const;
+  if (done === 0) return { mood: 'idle', text: '오늘도 하나씩 해볼까요?' } as const;
+  if (done / total >= 0.5) return { mood: 'happy', text: '거의 다 왔어요' } as const;
+  return { mood: 'idle', text: '좋은 출발이에요' } as const;
 }
 
 function Cheer({ done, total }: { done: number; total: number }) {
   const theme = useTheme();
-  const { emoji, text } = cheerMessage(done, total);
+  const { mood, text } = cheerMessage(done, total);
+  const allDone = total > 0 && done === total;
   return (
     <ThemedView type="backgroundElement" style={styles.cheer}>
-      <View style={styles.cheerTop}>
-        <ThemedText style={styles.cheerEmoji}>{emoji}</ThemedText>
-        <ThemedText type="display" style={styles.cheerText}>
-          {text}
-        </ThemedText>
-        {total > 0 && (
-          <ThemedText type="display" style={{ color: theme.accent }}>
-            {done}/{total}
+      <Doodle character="mochi" color={HabitColors.coral} mood={mood} size={56} arms={allDone} />
+      <View style={styles.cheerBody}>
+        <View style={styles.cheerTop}>
+          <ThemedText type="semibold" style={styles.flex}>
+            {text}
           </ThemedText>
+          {total > 0 && (
+            <ThemedText type="smallBold" style={{ color: theme.accent }}>
+              {done} / {total}
+            </ThemedText>
+          )}
+        </View>
+        {total > 0 && (
+          <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
+            <View
+              style={[
+                styles.fill,
+                { backgroundColor: theme.accent, width: `${(done / total) * 100}%` },
+              ]}
+            />
+          </View>
         )}
       </View>
-      {total > 0 && (
-        <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
-          <View
-            style={[styles.fill, { backgroundColor: theme.accent, width: `${(done / total) * 100}%` }]}
-          />
-        </View>
-      )}
     </ThemedView>
   );
 }
@@ -103,13 +108,15 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   const theme = useTheme();
   return (
     <View style={styles.empty}>
-      <ThemedText style={styles.emptyEmoji}>🐣</ThemedText>
-      <ThemedText type="display" style={styles.center}>
-        첫 습관을 만들어 볼까요?
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-        매일 톡 한 번이면 체크 끝!
-      </ThemedText>
+      <Doodle character="mochi" color={HabitColors.coral} mood="happy" size={112} arms />
+      <View style={styles.emptyTexts}>
+        <ThemedText type="heading" style={styles.center}>
+          첫 습관을 만들어 볼까요?
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+          매일 한 번 톡 누르면 체크 끝
+        </ThemedText>
+      </View>
       <Pressable
         accessibilityRole="button"
         onPress={onAdd}
@@ -118,7 +125,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
           { backgroundColor: theme.accent },
           pressed && styles.pressed,
         ]}>
-        <ThemedText type="display" style={{ color: theme.onAccent }}>
+        <ThemedText type="semibold" style={{ color: theme.onAccent }}>
           첫 습관 추가하기
         </ThemedText>
       </Pressable>
@@ -127,55 +134,58 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  section: {
+    gap: 16,
+  },
   list: {
-    gap: Spacing.two + Spacing.one,
+    gap: Layout.itemGap,
   },
   center: {
     textAlign: 'center',
   },
+  flex: {
+    flex: 1,
+  },
   cheer: {
-    borderRadius: Radius.card,
-    padding: Spacing.three,
-    gap: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: Layout.cardPadding,
+    borderRadius: Layout.cardRadius,
+  },
+  cheerBody: {
+    flex: 1,
+    gap: 10,
   },
   cheerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-  },
-  cheerEmoji: {
-    fontSize: 26,
-    lineHeight: 32,
-  },
-  cheerText: {
-    flex: 1,
+    gap: 8,
   },
   track: {
-    height: 14,
-    borderRadius: Radius.pill,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: Radius.pill,
+    borderRadius: 4,
   },
   empty: {
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.six,
+    gap: 20,
+    paddingTop: 48,
   },
-  emptyEmoji: {
-    fontSize: 72,
-    lineHeight: 88,
+  emptyTexts: {
+    gap: 6,
   },
   emptyButton: {
-    marginTop: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Radius.pill,
-    boxShadow: '0 4px 12px rgba(255, 138, 128, 0.45)',
+    minHeight: 52,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    borderRadius: 26,
   },
   pressed: {
-    transform: [{ scale: 0.96 }],
+    opacity: 0.8,
   },
 });
