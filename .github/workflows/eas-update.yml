@@ -1,0 +1,34 @@
+# Publishes an over-the-air update on every push to main. Installed preview
+# builds pick it up on next launch. Skips until EAS setup has been run.
+name: EAS update
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check EAS project is linked
+        id: linked
+        run: |
+          if grep -q '"projectId"' app.json; then echo "ok=true" >> "$GITHUB_OUTPUT"; else
+            echo "::notice::EAS project not linked yet. Run the 'EAS setup (run once)' workflow first."
+          fi
+      - if: steps.linked.outputs.ok
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.linked.outputs.ok
+        uses: expo/expo-github-action@v9
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - if: steps.linked.outputs.ok
+        run: npm ci
+      - if: steps.linked.outputs.ok
+        run: eas update --channel preview --environment preview --auto --non-interactive

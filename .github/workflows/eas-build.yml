@@ -1,0 +1,52 @@
+# Cloud builds on EAS. Run manually from the Actions tab, or push a tag:
+#   build-android-preview  -> installable APK
+#   v1.2.3                 -> Android production build (store upload)
+name: EAS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        options: [android, ios, all]
+        default: android
+      profile:
+        type: choice
+        options: [preview, development, production]
+        default: preview
+  push:
+    tags:
+      - 'v*'
+      - 'build-*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: expo/expo-github-action@v9
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - name: Resolve platform/profile
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "platform=${{ inputs.platform }}" >> "$GITHUB_OUTPUT"
+            echo "profile=${{ inputs.profile }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" == v* ]]; then
+            echo "platform=android" >> "$GITHUB_OUTPUT"
+            echo "profile=production" >> "$GITHUB_OUTPUT"
+          else
+            # build-<platform>-<profile>[-anything]
+            IFS=- read -r _ platform profile _ <<< "${{ github.ref_name }}"
+            echo "platform=$platform" >> "$GITHUB_OUTPUT"
+            echo "profile=$profile" >> "$GITHUB_OUTPUT"
+          fi
+      # The build runs on EAS; the link to it shows in this log and on expo.dev
+      - run: eas build --platform ${{ steps.target.outputs.platform }} --profile ${{ steps.target.outputs.profile }} --non-interactive --no-wait
