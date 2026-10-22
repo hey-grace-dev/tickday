@@ -28,3 +28,14 @@ All EAS workflows need the `EXPO_TOKEN` repo secret.
   checked on a device build.
 - OTA updates only reach builds with the same runtime version. After adding a package with native
   code or changing native config, a new build is required (push a `build-...` tag).
+
+## App structure
+
+- `src/app/(tabs)/`: 오늘 (`index`), 기록 (`history`), 설정 (`settings`). Tabs use `NativeTabs` on
+  device and a custom bottom bar on web (`src/components/app-tabs.web.tsx`).
+- `src/app/habit/[id].tsx`: create (`/habit/new`) / edit modal. `src/app/pro.tsx`: one-time purchase
+  screen (purchase not wired up yet).
+- `src/store/habits.ts`: zustand store persisted to AsyncStorage (localStorage on web). Pure date and
+  streak logic lives in `src/lib/`.
+- Web pages are statically rendered at build time, so anything that depends on "now" or stored data
+  must wait for `useHydrated()` to avoid hydration mismatches.
